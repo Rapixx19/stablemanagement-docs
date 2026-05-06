@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<title>Heute — Stable Crew</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F7F3EC">
+<link rel="stylesheet" href="_tokens.css">
+<style>
+  /* Worker mobile-first PWA: single column, 16px page padding, full-bleed cards on small screens.
+     Density: low — one action per screen, gloves on. */
+
+  body { background: var(--paper); }
+
+  /* Phone frame for desktop preview only — at runtime the app is fullscreen standalone */
+  .frame {
+    max-width: 420px;
+    margin: 24px auto;
+    background: var(--paper);
+    min-height: calc(100vh - 48px);
+    border: 1px solid var(--ink-100);
+    border-radius: 28px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    /* simulate safe-area inset on top + bottom */
+    padding-top: env(safe-area-inset-top, 0);
+  }
+  @media (max-width: 480px) {
+    .frame { max-width: none; margin: 0; min-height: 100vh; border: 0; border-radius: 0; }
+  }
+
+  .statusbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: var(--space-3) var(--space-6) 0;
+    font-size: var(--fs-xs);
+    font-family: var(--font-mono);
+    color: var(--ink-500);
+  }
+
+  .head {
+    padding: var(--space-4) var(--space-4) var(--space-2);
+  }
+  .head__greet { font-size: var(--fs-lg); line-height: var(--lh-lg); font-weight: 500; }
+  .head__sub   { font-size: var(--fs-sm); color: var(--ink-500); margin-top: 2px; }
+
+  main {
+    flex: 1;
+    padding: var(--space-2) var(--space-4) calc(var(--space-16) + 56px + env(safe-area-inset-bottom, 0));
+    display: flex; flex-direction: column; gap: var(--space-4);
+  }
+
+  /* Clock card — primary CTA when not clocked in. Worker default 44px; primary action 52px. */
+  .clock {
+    background: var(--canvas);
+    border: 1px solid var(--ink-100);
+    border-radius: var(--radius-md);
+    padding: var(--space-6);
+    display: flex; flex-direction: column; gap: var(--space-4);
+  }
+  .clock__row { display: flex; align-items: center; justify-content: space-between; }
+  .clock__since { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-xl); line-height: var(--lh-xl); font-weight: 500; color: var(--ink-900); }
+  .clock__label { font-size: var(--fs-xs); color: var(--ink-500); letter-spacing: 0.04em; text-transform: uppercase; }
+  .clock__actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+
+  /* Tasks block — list of round check circles, italic subtitles, time on the right */
+  .tasks__head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 0 var(--space-2) var(--space-3);
+  }
+  .tasks__title { font-size: var(--fs-md); font-weight: 500; }
+  .tasks__count { font-size: var(--fs-sm); color: var(--ink-500); font-family: var(--font-mono); }
+  .tasks__list { display: flex; flex-direction: column; }
+
+  .task {
+    display: grid; grid-template-columns: 32px 1fr auto; gap: var(--space-3);
+    align-items: center;
+    background: var(--canvas);
+    border: 1px solid var(--ink-100);
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-4);
+    min-height: 64px;
+    margin-bottom: var(--space-2);
+    cursor: pointer;
+    transition: opacity var(--m-list);
+  }
+  .task__check {
+    width: 24px; height: 24px; border-radius: 999px;
+    border: 1.5px solid var(--ink-300);
+    display: grid; place-items: center;
+    transition: background-color var(--m-tap), border-color var(--m-tap);
+  }
+  .task--done .task__check { background: var(--moss-600); border-color: var(--moss-600); }
+  .task--done .task__check svg { stroke: var(--canvas); }
+  .task__check svg { width: 14px; height: 14px; stroke-width: 2; stroke: transparent; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .task__title { font-size: var(--fs-md); }
+  .task__sub   { font-size: var(--fs-sm); font-style: italic; color: var(--ink-500); margin-top: 1px; }
+  .task--done .task__title { color: var(--ink-500); text-decoration: line-through; text-decoration-color: var(--ink-300); }
+  .task__time { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-sm); color: var(--ink-700); }
+
+  .tasks__divider {
+    font-size: var(--fs-xs); color: var(--ink-500); letter-spacing: 0.04em; text-transform: uppercase;
+    padding: var(--space-3) var(--space-2) var(--space-2);
+  }
+
+  /* Week strip */
+  .week {
+    background: var(--canvas);
+    border: 1px solid var(--ink-100);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+  }
+  .week__title { font-size: var(--fs-sm); color: var(--ink-500); margin-bottom: var(--space-3); }
+  .week__row { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--space-2); }
+  .day {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: var(--space-2) 0;
+    border-radius: var(--radius-sm);
+    background: var(--canvas);
+    border: 1px solid var(--ink-100);
+    font-size: var(--fs-xs);
+  }
+  .day__lbl { color: var(--ink-500); }
+  .day__num { color: var(--ink-900); font-weight: 500; font-size: var(--fs-md); }
+  .day--today { border: 0; background: transparent; position: relative; padding-bottom: var(--space-3); }
+  .day--today::after {
+    content: ''; position: absolute; left: 20%; right: 20%; bottom: 4px; height: 2px;
+    background: var(--terracotta-600); border-radius: 2px;
+  }
+  .day--off { border-style: dashed; color: var(--ink-300); background: transparent; }
+  .day--off .day__num, .day--off .day__lbl { color: var(--ink-300); }
+
+  /* Quick actions */
+  .qa { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); }
+  .qa .btn { height: 52px; }
+
+  /* Bottom tab bar */
+  .tabs {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    height: calc(56px + env(safe-area-inset-bottom, 0));
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    background: var(--canvas);
+    border-top: 1px solid var(--ink-100);
+    display: grid; grid-template-columns: repeat(4, 1fr);
+  }
+  .tabs__item {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    color: var(--ink-500); text-decoration: none;
+    font-size: var(--fs-xs);
+    position: relative;
+  }
+  .tabs__item--active { color: var(--ink-900); }
+  .tabs__item--active::before {
+    content: ''; position: absolute; top: 0; left: 30%; right: 30%; height: 2px; background: var(--terracotta-600); border-radius: 2px;
+  }
+  .tabs__icon { width: 22px; height: 22px; stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  @media (max-width: 480px) {
+    .tabs { position: fixed; }
+  }
+
+  .ico { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-11"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></symbol>
+    <symbol id="i-stop"  viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1"/></symbol>
+    <symbol id="i-home"  viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h4v-6h6v6h4V10"/></symbol>
+    <symbol id="i-cal"   viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-task"  viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></symbol>
+    <symbol id="i-msg"   viewBox="0 0 24 24"><path d="M3 5h18v12H8l-5 4z"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="4"/></symbol>
+    <symbol id="i-sick"  viewBox="0 0 24 24"><path d="M5 12h14"/><circle cx="12" cy="12" r="9"/></symbol>
+  </defs>
+</svg>
+
+<div class="frame" role="application" aria-label="Stable Crew">
+
+  <div class="statusbar" aria-hidden="true">
+    <span>07:18</span>
+    <span>Stable Crew</span>
+    <span>● 87 %</span>
+  </div>
+
+  <header class="head">
+    <div class="head__greet">Grüezi Mario.</div>
+    <div class="head__sub">Schicht heute 07:00 – 12:00</div>
+  </header>
+
+  <main>
+    <!-- Clocked-in clock card -->
+    <section class="clock" aria-label="Stempeluhr">
+      <div class="clock__row">
+        <div>
+          <div class="clock__label">Eingestempelt seit</div>
+          <div class="clock__since">06:58 · 0:20:14</div>
+        </div>
+        <span class="pill pill--onsite">● vor Ort</span>
+      </div>
+      <div class="clock__actions">
+        <button class="btn btn--secondary btn--lg"><svg class="ico"><use href="#i-pause"/></svg> Pause</button>
+        <button class="btn btn--ghost btn--lg" style="border:1px solid var(--ink-300);"><svg class="ico"><use href="#i-stop"/></svg> Ausstempeln</button>
+      </div>
+    </section>
+
+    <!-- Today's tasks -->
+    <section aria-label="Heutige Aufgaben">
+      <div class="tasks__head">
+        <h2 class="tasks__title">Heute</h2>
+        <span class="tasks__count">2 / 6 erledigt</span>
+      </div>
+      <div class="tasks__list">
+
+        <button class="task" aria-pressed="false">
+          <div class="task__check"><svg><use href="#i-check"/></svg></div>
+          <div>
+            <div class="task__title">Fütterung Reihe A</div>
+            <div class="task__sub">Heu + Hafer · Box A1 – A8</div>
+          </div>
+          <div class="task__time">07:00</div>
+        </button>
+
+        <button class="task" aria-pressed="false">
+          <div class="task__check"><svg><use href="#i-check"/></svg></div>
+          <div>
+            <div class="task__title">Misten Reihe A</div>
+            <div class="task__sub">Box A1 – A4</div>
+          </div>
+          <div class="task__time">07:30</div>
+        </button>
+
+        <button class="task" aria-pressed="false">
+          <div class="task__check"><svg><use href="#i-check"/></svg></div>
+          <div>
+            <div class="task__title">Diva auf Weide bringen</div>
+            <div class="task__sub">Halfter im Sattelraum · Weide Süd</div>
+          </div>
+          <div class="task__time">08:30</div>
+        </button>
+
+        <button class="task" aria-pressed="false">
+          <div class="task__check"><svg><use href="#i-check"/></svg></div>
+          <div>
+            <div class="task__title">Tierarzt empfangen</div>
+            <div class="task__sub">Dr. Brunner · Diva Box B7</div>
+          </div>
+          <div class="task__time">09:00</div>
+        </button>
+
+        <div class="tasks__divider">Erledigt</div>
+
+        <button class="task task--done" aria-pressed="true">
+          <div class="task__check"><svg><use href="#i-check"/></svg></div>
+          <div>
+            <div class="task__title">Boxen kontrollieren</div>
+            <div class="task__sub">A1 – C8</div>
+          </div>
+          <div class="task__time">06:45</div>
+        </button>
+
+        <button class="task task--done" aria-pressed="true">
+          <div class="task__check"><svg><use href="#i-check"/></svg></div>
+          <div>
+            <div class="task__title">Wasser auffüllen Reihe A</div>
+            <div class="task__sub">Automaten Reihe A</div>
+          </div>
+          <div class="task__time">07:05</div>
+        </button>
+
+      </div>
+    </section>
+
+    <!-- Week strip -->
+    <section class="week" aria-label="Diese Woche">
+      <div class="week__title">Diese Woche</div>
+      <div class="week__row">
+        <div class="day"><span class="day__lbl">Mo</span><span class="day__num">4</span></div>
+        <div class="day day--today"><span class="day__lbl">Di</span><span class="day__num">5</span></div>
+        <div class="day"><span class="day__lbl">Mi</span><span class="day__num">6</span></div>
+        <div class="day day--off"><span class="day__lbl">Do</span><span class="day__num">7</span></div>
+        <div class="day"><span class="day__lbl">Fr</span><span class="day__num">8</span></div>
+        <div class="day"><span class="day__lbl">Sa</span><span class="day__num">9</span></div>
+        <div class="day day--off"><span class="day__lbl">So</span><span class="day__num">10</span></div>
+      </div>
+    </section>
+
+    <!-- Quick actions -->
+    <section aria-label="Schnellaktionen">
+      <div class="qa">
+        <button class="btn btn--secondary"><svg class="ico"><use href="#i-msg"/></svg> Stall melden</button>
+        <button class="btn btn--secondary"><svg class="ico"><use href="#i-sick"/></svg> Krank melden</button>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabs" aria-label="Hauptnavigation">
+    <a href="#" class="tabs__item tabs__item--active" aria-current="page">
+      <svg class="tabs__icon" aria-hidden="true"><use href="#i-home"/></svg>
+      Heute
+    </a>
+    <a href="#" class="tabs__item">
+      <svg class="tabs__icon" aria-hidden="true"><use href="#i-cal"/></svg>
+      Plan
+    </a>
+    <a href="#" class="tabs__item">
+      <svg class="tabs__icon" aria-hidden="true"><use href="#i-task"/></svg>
+      Aufgaben
+    </a>
+    <a href="#" class="tabs__item">
+      <svg class="tabs__icon" aria-hidden="true"><use href="#i-msg"/></svg>
+      Chat
+    </a>
+  </nav>
+
+</div>
+</body>
+</html>
