@@ -10,10 +10,11 @@ The discipline document. Every item below was considered, scoped, and explicitly
 - **Why V1.1 is right**: it's the differentiator from competitors. We need V1 stable first, then this.
 - **Effort estimate**: 4–6 weeks, 2 engineers + vet domain reviewer.
 
-### Inventory module
+### Inventory forecasting (basic inventory now in V1)
 
-- **Why deferred**: feed/bedding/medication stock tracking. Useful but not blocking for La Fattoria.
-- **Effort**: 3–4 weeks.
+- **What's in V1**: stock-on-hand, low-stock badges, worker quick-consume, one-tap reorder POs, supplier email — see `slices/17-inventory.md`.
+- **Why deferred to V1.5**: consumption-rate forecasting (time-to-stockout, dynamic thresholds, auto-reorder triggers) needs ~6 weeks of `inventory_movements` data. Sits naturally with the V1.5 ML layer.
+- **Effort**: 3 dev-days once the ledger has data.
 
 ### Reporting module
 
@@ -94,11 +95,12 @@ The discipline document. Every item below was considered, scoped, and explicitly
 
 ### ML layer
 
-The platform feature. Once we have ~6 months of operational data (tasks, schedules, billing patterns), we train models. Ideas:
+The platform feature. Once we have ~6 months of operational data (tasks, schedules, billing patterns, inventory movements), we train models. Ideas:
 - Predictive task ordering ("this worker usually does these tasks in this order")
 - Anomaly detection on horse-related events ("Bella's vet visits in last 90 days are 2× last year — flag")
 - Revenue forecasting beyond simple linear projection
 - Optimal stall assignment (group horses by compatibility from event data)
+- Inventory consumption-rate forecasting + auto-reorder thresholds (see slice 17 V1.5 follow-on)
 
 Specs in `domains/ml-roadmap.md` (V1.5 doc, written when V1 ships).
 
