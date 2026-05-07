@@ -18,8 +18,10 @@ $$;
 
 create or replace function auth.current_role(p_stable_id uuid) returns text
 language sql stable as $$
+  -- highest privilege wins (owner > manager > worker > client)
   select role from memberships
   where user_id = auth.uid() and stable_id = p_stable_id
+  order by array_position(ARRAY['owner','manager','worker','client']::text[], role)
   limit 1;
 $$;
 ```
@@ -92,11 +94,11 @@ File path convention: `{stable_id}/{horse_id}/{document_id}.{ext}`. The folder s
 
 ## Service-role escapes (rare, dangerous)
 
-The service role (used only in Railway crons and seed scripts) bypasses RLS. Three rules: never use it from a user-facing code path; pair every service-role query with an explicit `WHERE stable_id = $1`; comment every usage with `// service_role: reason`.
+The service role (used only in seed scripts and rare admin tools) bypasses RLS. Three rules: never use it from a user-facing code path; pair every service-role query with an explicit `WHERE stable_id = $1`; comment every usage with `// service_role: reason`. Vercel Cron route handlers run as authenticated server actions, not service role — they look up `stable_id` per row from the data they process.
 
 ## RLS test pattern
 
-Every table with `stable_id` has paired tests in `apps/owner/tests/rls/`:
+Every table with `stable_id` has paired tests in `apps/web/tests/rls/`:
 
 ```ts
 describe('horses RLS', () => {

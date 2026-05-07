@@ -55,7 +55,7 @@ Per email type:
 
 ## Send queue
 
-`packages/lib/email/queue.ts` writes to a `email_queue` table. A Railway cron drains every 30s.
+`packages/lib/email/queue.ts` writes to an `email_queue` table. A **Vercel Cron** at `/api/cron/email-drain` runs every 60s, authenticated by `CRON_SECRET` bearer (per `DECISIONS.md` D6+D12). Picks up to 30 ready rows per tick (`scheduled_for <= now() AND sent_at IS NULL AND attempts < 5`), sends via Resend, marks `sent_at` or increments `attempts` + `last_error` on failure.
 
 ```sql
 create table email_queue (

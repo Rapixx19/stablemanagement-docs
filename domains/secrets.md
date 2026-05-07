@@ -15,7 +15,7 @@ Where secrets live, how OAuth tokens are stored, the unbreakable rules.
 | Type | Where | Rotation |
 |---|---|---|
 | Supabase `anon` key | Public (in browser) | When project is rebuilt |
-| Supabase `service_role` key | Server only, Vercel/Railway | Quarterly + on incident |
+| Supabase `service_role` key | Server only, Vercel | Quarterly + on incident |
 | Bexio OAuth client secret | Server only | When Bexio rotates |
 | Resend API key | Server only | When team member departs |
 | Anthropic API key (catalog AI) | Server only | When team member departs |
@@ -24,20 +24,24 @@ Where secrets live, how OAuth tokens are stored, the unbreakable rules.
 
 ## Pgcrypto key for OAuth tokens
 
-Bexio OAuth tokens (and any future OAuth secrets) are stored in Postgres encrypted with `pgcrypto`. The symmetric key (`BEXIO_TOKEN_ENCRYPTION_KEY`) lives in Vercel env, marked Sensitive, and is mirrored into Supabase Vault under `bexio_token_encryption_key` so pg_cron-invoked Edge Functions can decrypt during reconciliation.
+Bexio OAuth tokens (and any future OAuth secrets) are stored in Postgres encrypted with `pgcrypto` in **`bytea` columns** (per `DECISIONS.md` D8). The symmetric key (`BEXIO_TOKEN_ENCRYPTION_KEY`) lives in Vercel env, marked Sensitive.
 
-Encrypt:
+**Pattern (must be inside one transaction).** Transaction-mode pooler discards session state between transactions, so `set_config` must be `true` (txn-local) and inside the same TX as the decrypt:
+
 ```sql
-update bexio_connections set
-  oauth_access_token_encrypted = pgp_sym_encrypt($1, current_setting('app.crypto_key'));
+BEGIN;
+  SELECT set_config('app.crypto_key', $1, true);   -- true = txn-local
+  -- encrypt path:
+  UPDATE bexio_connections
+     SET oauth_access_token = pgp_sym_encrypt($2, current_setting('app.crypto_key'))
+   WHERE stable_id = $3;
+  -- decrypt path:
+  SELECT pgp_sym_decrypt(oauth_access_token, current_setting('app.crypto_key'))
+    FROM bexio_connections WHERE stable_id = $3;
+COMMIT;
 ```
 
-Decrypt (read-only, in service role):
-```sql
-select pgp_sym_decrypt(oauth_access_token_encrypted::bytea, current_setting('app.crypto_key'));
-```
-
-The crypto key is set per-session via `set_config`. Never hardcoded in queries. Never in client logs.
+The key is passed in by the server action on every call, never hardcoded, never in client logs.
 
 **Rotation, force-reauth, and key-loss recovery procedures**: see `runbooks/bexio-token-recovery.md`.
 
@@ -66,8 +70,8 @@ Vercel (`apps/web`) needs:
 
 ## Cron authentication
 
-- **Vercel Cron** routes (`/api/cron/bexio-poll`, `/api/cron/email-digest`) verify `Authorization: Bearer ${CRON_SECRET}` on every invocation. Handlers reject non-cron requests with 401.
-- **pg_cron** routes (task materialisation, subscription run, audit partition rotation) live entirely inside Postgres and don't need an HTTP secret. If a pg_cron job needs to call out (e.g. via `net.http_post` to a Supabase Edge Function), the secret comes from Supabase Vault.
+- **Vercel Cron** routes (`/api/cron/{email-drain,task-materialisation,bexio-poll,bexio-keepalive,request-expiry,auto-punch-out}`) verify `Authorization: Bearer ${CRON_SECRET}` on every invocation. Handlers reject non-cron requests with 401. Single shared `CRON_SECRET` per env (per `DECISIONS.md` D12).
+- **pg_cron** jobs that stay pure SQL (subscription run, audit partition rotation) live entirely inside Postgres and don't need an HTTP secret. RRULE expansion + email send + external API calls live in Vercel Cron Node handlers.
 
 ## CI / GitHub Actions
 

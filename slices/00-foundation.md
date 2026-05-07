@@ -11,13 +11,13 @@ A two-engineer team can clone the repo, run `pnpm dev`, boot the single Next.js 
 ## What ships
 
 1. **Monorepo bootstrap.** Turborepo, pnpm workspaces, TypeScript strict, ESLint, Prettier, Husky pre-commit.
-2. **Single Next.js 14 app at `apps/web`** with three role-based route trees: `app/owner/*`, `app/client/*`, `app/worker/*`. Tailwind preset shared via `packages/ui`. PWA manifest scoped to `/worker/*`.
+2. **Single Next.js 16 app at `apps/web/`** with three role-based route trees: `app/owner/*`, `app/client/*`, `app/worker/*` (see `DECISIONS.md` D1, D2). Tailwind preset shared via `packages/ui`, **`content` glob scoped per route tree** to keep worker bundle lean. **Per-tree ESLint `no-restricted-imports`** rules block worker code from importing owner/client/billing modules. PWA manifest at `/worker/manifest.webmanifest` scoped to `/worker/`, service worker via `@serwist/next` (D5).
 3. **Supabase project (Frankfurt, Pro tier).** Auth + Postgres + Storage + Realtime + pg_cron extension enabled. Frankfurt region for CH data residency.
 4. **Connection Pooler enabled.** Transaction mode for app traffic (PgBouncer). Direct connection reserved for migrations + pg_cron jobs. Documented in `domains/secrets.md`.
 5. **Per-role `statement_timeout = 30s`** on Supabase roles used by app traffic. Direct/migration role keeps the default.
 6. **Schema bootstrap.** `stables`, `users`, `memberships`, `audit_log`, `feature_flags` tables. Migrations folder, `packages/db/schema.sql` canonical.
 7. **`audit_log` partitioned by year from Day 1.** Postgres declarative range partitioning on `at`. Year partitions auto-created via pg_cron. See "Audit log partitioning" below.
-8. **RLS scaffolding.** Helper SQL functions `auth.current_stable_ids()` (setof) and `auth.current_stable_ids_array()` (uuid[]) for hot-path policies. First policies on the 5 tables. Paired isolation tests.
+8. **RLS scaffolding.** Helper SQL functions `auth.current_stable_ids()` (setof) and `auth.current_stable_ids_array()` (uuid[]) for hot-path policies. **`auth.current_role(p_stable_id)` returns highest privilege** (owner > manager > worker > client) via `array_position`, not arbitrary `LIMIT 1`. First policies on the 5 tables. Paired isolation tests.
 9. **Auth flow.** Magic-link login → role picker → stable picker (if multi-membership). DE/FR/IT email templates. Pre-warmed SPF/DKIM/DMARC on `lafattoria.app` before pilot.
 10. **Audit log trigger pattern.** Postgres trigger that writes to `audit_log` on `INSERT`/`UPDATE`/`DELETE` for whitelisted tables.
 11. **Read-only DB role.** `stable_readonly` Postgres role created, granted SELECT on (empty) views. For V1.5 ML.
@@ -65,6 +65,7 @@ create table audit_log_2026 partition of audit_log
   for values from ('2026-01-01') to ('2027-01-01');
 create table audit_log_2027 partition of audit_log
   for values from ('2027-01-01') to ('2028-01-01');
+create table audit_log_default partition of audit_log default;  -- safety net if pg_cron fails to create next year's partition
 -- Subsequent year partitions auto-created by pg_cron job (see supabase/cron/audit-partition.sql)
 create index on audit_log (stable_id, entity, entity_id);
 create index on audit_log (stable_id, at desc);
@@ -114,7 +115,7 @@ Archival to cold storage is a V1.1+ runbook, not implemented in V1. Yearly parti
 
 ## Acceptance integration test
 
-`apps/owner/tests/integration/foundation.test.ts`
+`apps/web/tests/integration/owner/foundation.test.ts`
 
 ```ts
 test('user with membership in stable A cannot read stable B', async () => {
@@ -133,10 +134,12 @@ test('user with membership in stable A cannot read stable B', async () => {
 
 ## Files touched
 
-- `package.json`, `turbo.json`, `pnpm-workspace.yaml`
-- `apps/{owner,client,worker}/` — bootstrap
-- `packages/ui/`, `packages/db/`, `packages/lib/`, `packages/i18n/`
+- `package.json`, `turbo.json`, `pnpm-workspace.yaml`, `vercel.ts`
+- `apps/web/` — single Next.js 16 app with `app/{owner,client,worker}/*` route trees
+- `packages/ui/`, `packages/db/` (Drizzle schema + migrations), `packages/lib/`, `packages/i18n/`
+- `packages/lib/eslint-config/{owner,client,worker}.js` — bundle-isolation rules
 - `supabase/migrations/001_init.sql`
 - `supabase/policies/{stables,memberships,audit_log,feature_flags}.sql`
+- `app/api/cron/{email-drain,task-materialisation,bexio-poll}/route.ts` — Vercel Cron handlers (with `CRON_SECRET` bearer check)
 - `.github/workflows/ci.yml`
 - `runbooks/auth-recovery.md`

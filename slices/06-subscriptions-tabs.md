@@ -53,6 +53,8 @@ create table tab_lines (
   unit_price_cents bigint not null,
   vat_code text not null references vat_rates(code),
   occurred_on date not null,
+  period_start date,                          -- set on subscription lines (covers prorated cycles)
+  period_end date,                            -- exclusive: line covers [period_start, period_end)
   invoice_id uuid,                            -- set when invoice generated
   origin text not null check (origin in ('subscription','one_off')),
   created_by_user_id uuid references auth.users(id),
@@ -62,14 +64,17 @@ create table tab_lines (
 
 create index on tab_lines (stable_id, person_id, occurred_on);
 create index on tab_lines (stable_id, person_id, invoice_id);
+create unique index tab_lines_subscription_period_unique
+  on tab_lines (person_id, service_id, period_start, period_end)
+  where origin = 'subscription' and deleted_at is null;
 create index on client_subscriptions (stable_id, person_id, active_to);
 ```
 
 ## Subscription materialisation
 
-A monthly **pg_cron** job (`supabase/cron/subscription-run.sql`, runs `0 2 1 * *` in `Europe/Zurich`) materialises subscription tab lines for the new period. DB-internal — no Railway, no Vercel function. Idempotent via a unique partial index `(person_id, service_id, period_start, period_end) WHERE origin = 'subscription'`. Re-running produces zero new rows.
+A monthly **pg_cron** job (`supabase/cron/subscription-run.sql`, runs `0 2 1 * *` Europe/Zurich) materialises subscription tab lines for the new period. Pure SQL — no RRULE expansion needed (always month boundary), so pg_cron is the right fit (vs Vercel Cron for slice 04 task materialisation per `DECISIONS.md` D7). Idempotent via the unique partial index `tab_lines_subscription_period_unique` defined in the schema diff above. Re-running produces zero new rows.
 
-For mid-month subscriptions (`active_from = 15th`), prorated by daily rate: `floor(price_cents * days_active / days_in_period)`. Helper in `packages/lib/billing/proration.ts` is the source of truth; the SQL materialisation function calls a single SQL helper that mirrors the TS logic exactly. Both sides share the same fixture-driven test suite.
+For mid-month subscriptions (`active_from = 15th`), **prorated by per-day rate using days-in-period** (so February uses /28 or /29, not /30): `floor(price_cents * days_active / days_in_period)`. `active_to` is **inclusive** (subscription active *through* that date). Helper in `packages/lib/billing/proration.ts` is the source of truth; the SQL materialisation function calls a single SQL helper that mirrors the TS logic exactly. Both sides share the same fixture-driven test suite.
 
 Edge cases the proration helper must handle (each pinned in tests below): start mid-period; end mid-period; both in same period; February 28-day month; February 29-day leap month; period that is fully suspended (`active_to < period_start` → no line); subscription that ends on the last day of the period (full charge, no proration).
 
@@ -109,7 +114,7 @@ VAT computation: see `domains/vat.md`. Per line: `(qty * unit_price) * (1 + rate
 
 ## Acceptance integration test
 
-`apps/owner/tests/integration/tabs.test.ts` — owner adds subscription, runs materialisation cron twice, asserts single line per period.
+`apps/web/tests/integration/owner/tabs.test.ts` — owner adds subscription, runs materialisation cron twice, asserts single line per period.
 
 ## Out of scope
 

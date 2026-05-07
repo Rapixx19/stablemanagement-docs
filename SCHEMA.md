@@ -7,8 +7,10 @@ Canonical reference. Source of truth lives in `packages/db/schema.sql`. This doc
 - All tables have `id uuid primary key default gen_random_uuid()`
 - All multi-tenant tables have `stable_id uuid not null references stables(id)`
 - Timestamps are `timestamptz`, defaulted to `now()` where applicable
-- Money is `numeric(12,2)` for display joins; underlying actions use integer cents
-- Soft delete via `deleted_at timestamptz null` where audit matters; hard delete elsewhere
+- Money is **`bigint not null check (>= 0)`** suffixed `_cents` (e.g. `unit_price_cents`). Never `numeric` for amounts. See `domains/money.md`.
+- Encrypted columns (e.g. OAuth tokens) are `bytea`, not `text`. See `DECISIONS.md` D8.
+- Soft delete via `deleted_at timestamptz null` where audit matters; `archived_at timestamptz null` where the row should disappear from default lists but is not "deleted" (people, horses); hard delete elsewhere
+- All mutable tables have `updated_at timestamptz not null default now()` maintained by trigger
 - Every table has an RLS policy in `supabase/policies/<table>.sql` and a paired test
 
 ## Tenants and identity
