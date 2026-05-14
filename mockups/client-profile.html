@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Client Profile — Marta Keller</title>
+<meta name="viewport" content="width=1280, initial-scale=1">
+<link rel="stylesheet" href="_tokens.css">
+<style>
+  body { background: var(--paper); margin: 0; font-family: var(--font-sans); color: var(--ink-900); }
+  .app { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; }
+  .rail { background: var(--canvas); border-right: 1px solid var(--ink-100); padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); }
+  .rail__brand { display: flex; align-items: center; gap: var(--space-3); padding-bottom: var(--space-4); border-bottom: 1px solid var(--ink-100); }
+  .rail__plaque { width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--clay-200); color: var(--terracotta-700); display: grid; place-items: center; font-family: var(--font-serif); font-weight: 600; }
+  .rail__name { font-family: var(--font-serif); font-size: var(--fs-lg); font-weight: 500; }
+  .rail__role { font-size: var(--fs-xs); color: var(--ink-500); }
+  .rail__item { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); color: var(--ink-700); font-size: var(--fs-md); }
+  .rail__item--active { background: var(--ink-100); color: var(--ink-900); font-weight: 500; }
+  .rail__item--active .ico { color: var(--terracotta-600); }
+  .rail__icon { color: var(--ink-500); }
+  .ico { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+  .main { padding: var(--space-6) var(--space-8); max-width: 1280px; }
+  .breadcrumb { font-size: var(--fs-sm); color: var(--ink-500); margin-bottom: var(--space-3); }
+  .breadcrumb a { color: var(--ink-500); text-decoration: none; }
+
+  /* Client header */
+  .client-head { display: grid; grid-template-columns: 96px 1fr auto; gap: var(--space-5); align-items: center; padding-bottom: var(--space-5); margin-bottom: var(--space-2); }
+  .client-avatar { width: 96px; height: 96px; border-radius: 50%; background: var(--clay-200); display: grid; place-items: center; font-family: var(--font-serif); font-weight: 500; color: var(--terracotta-700); font-size: var(--fs-2xl); }
+  .client-name { font-family: var(--font-serif); font-size: var(--fs-2xl); line-height: var(--lh-2xl); font-weight: 500; letter-spacing: -0.02em; margin-bottom: var(--space-2); }
+  .client-meta { display: flex; gap: var(--space-4); font-size: var(--fs-sm); color: var(--ink-500); flex-wrap: wrap; }
+  .client-meta__item { display: flex; gap: var(--space-2); align-items: center; }
+  .client-meta__lbl { color: var(--ink-300); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.04em; }
+  .client-actions { display: flex; gap: var(--space-3); }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--ink-100); margin-bottom: var(--space-6); }
+  .tab { padding: var(--space-3) var(--space-4); font-size: var(--fs-md); color: var(--ink-700); border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: default; display: flex; align-items: center; gap: var(--space-2); }
+  .tab__count { font-size: var(--fs-xs); color: var(--ink-500); padding: 1px var(--space-2); background: var(--ink-100); border-radius: 999px; font-family: var(--font-mono); }
+  .tab--active { color: var(--ink-900); border-bottom-color: var(--terracotta-600); font-weight: 500; }
+
+  /* Search bar */
+  .search-bar { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border: 1px solid var(--ink-300); border-radius: var(--radius-md); background: var(--canvas); margin-bottom: var(--space-5); }
+  .search-bar input { flex: 1; border: 0; outline: 0; background: transparent; font-size: var(--fs-md); font-family: inherit; color: var(--ink-900); }
+  .search-bar input::placeholder { color: var(--ink-500); }
+  .search-bar__hint { font-size: var(--fs-xs); color: var(--ink-500); font-family: var(--font-mono); }
+
+  /* Grid layout */
+  .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--space-5); margin-bottom: var(--space-5); }
+  .col-8 { grid-column: span 8; }
+  .col-4 { grid-column: span 4; }
+  .col-6 { grid-column: span 6; }
+  .col-12 { grid-column: span 12; }
+
+  .card { background: var(--canvas); border: 1px solid var(--ink-100); border-radius: var(--radius-md); padding: var(--space-5); }
+  .card__head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--space-4); }
+  .card__title { font-size: var(--fs-md); font-weight: 500; }
+  .card__link { font-size: var(--fs-sm); color: var(--terracotta-600); text-decoration: none; }
+
+  /* Horses grid (mini) */
+  .horses-mini { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); }
+  .horse-mini { display: flex; gap: var(--space-3); align-items: center; padding: var(--space-2); border: 1px solid var(--ink-100); border-radius: var(--radius-sm); cursor: default; }
+  .horse-mini__photo { width: 48px; height: 48px; border-radius: var(--radius-sm); background: var(--clay-200); display: grid; place-items: center; font-family: var(--font-serif); font-weight: 500; color: var(--terracotta-700); }
+  .horse-mini__name { font-size: var(--fs-md); font-weight: 500; }
+  .horse-mini__sub { font-size: var(--fs-xs); color: var(--ink-500); font-family: var(--font-mono); margin-top: 2px; }
+
+  /* Spending chart */
+  .spend-summary { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-4); }
+  .spend-stat__lbl { font-size: var(--fs-xs); color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.04em; }
+  .spend-stat__val { font-size: var(--fs-xl); font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .spend-chart { height: 140px; display: flex; align-items: flex-end; gap: 4px; padding: var(--space-2) 0; }
+  .spend-bar { flex: 1; display: flex; flex-direction: column; gap: 1px; align-items: stretch; min-width: 0; }
+  .spend-seg { background: var(--terracotta-600); }
+  .spend-seg--moss { background: var(--moss-600); }
+  .spend-seg--ochre { background: var(--ochre-600); }
+  .spend-seg--ink { background: var(--ink-500); }
+  .spend-axis { display: flex; gap: 4px; margin-top: var(--space-2); font-size: var(--fs-xs); color: var(--ink-500); font-family: var(--font-mono); }
+  .spend-axis span { flex: 1; text-align: center; min-width: 0; }
+  .spend-legend { display: flex; gap: var(--space-4); margin-top: var(--space-3); font-size: var(--fs-xs); color: var(--ink-500); }
+  .spend-legend__sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: 1px; }
+
+  /* Documents */
+  .docs { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+  .doc { display: grid; grid-template-columns: 40px 1fr auto; gap: var(--space-3); align-items: center; padding: var(--space-3); border: 1px solid var(--ink-100); border-radius: var(--radius-sm); background: var(--canvas); }
+  .doc__icon { width: 40px; height: 40px; background: var(--ink-100); border-radius: var(--radius-sm); display: grid; place-items: center; color: var(--ink-500); }
+  .doc__name { font-size: var(--fs-sm); font-weight: 500; }
+  .doc__meta { font-size: var(--fs-xs); color: var(--ink-500); margin-top: 2px; font-family: var(--font-mono); }
+  .doc__expiry { font-size: var(--fs-xs); }
+  .doc__expiry--warn { color: var(--ochre-600); }
+  .doc__expiry--ok { color: var(--ink-500); }
+
+  /* Activity timeline */
+  .activity { display: flex; flex-direction: column; gap: 0; }
+  .activity__item { display: grid; grid-template-columns: 96px 16px 1fr; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--ink-100); align-items: start; }
+  .activity__item:last-child { border-bottom: 0; }
+  .activity__date { font-size: var(--fs-xs); color: var(--ink-500); font-family: var(--font-mono); padding-top: 2px; }
+  .activity__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-300); margin-top: 6px; justify-self: center; }
+  .activity__dot--moss { background: var(--moss-600); }
+  .activity__dot--terr { background: var(--terracotta-600); }
+  .activity__dot--ochre { background: var(--ochre-600); }
+  .activity__title { font-size: var(--fs-sm); font-weight: 500; }
+  .activity__sub { font-size: var(--fs-xs); color: var(--ink-500); margin-top: 2px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h4v-6h6v6h4V10"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/></symbol>
+    <symbol id="i-horse" viewBox="0 0 24 24"><path d="M5 21V11c0-2 1-4 4-4h6l3-3v6l3 3-3 1v3l-2 4M9 21v-5"/></symbol>
+    <symbol id="i-money" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-msg" viewBox="0 0 24 24"><path d="M3 5h18v12H8l-5 4z"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 7 9-7"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <aside class="rail">
+    <div class="rail__brand"><div class="rail__plaque">LF</div><div><div class="rail__name">La Fattoria</div><div class="rail__role">Anna Frei</div></div></div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-home"/></svg>Overview</div>
+    <div class="rail__item rail__item--active"><svg class="ico rail__icon"><use href="#i-users"/></svg>Clients</div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-horse"/></svg>Horses &amp; Stalls</div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-money"/></svg>Accounting</div>
+  </aside>
+
+  <main class="main">
+    <div class="breadcrumb"><a href="#">Clients</a> · <strong style="color: var(--ink-900);">Marta Keller</strong></div>
+
+    <div class="client-head">
+      <div class="client-avatar">MK</div>
+      <div>
+        <div class="client-name">Marta Keller</div>
+        <div class="client-meta">
+          <span class="client-meta__item"><svg class="ico"><use href="#i-mail"/></svg> marta.keller@bluewin.ch</span>
+          <span class="client-meta__item"><svg class="ico"><use href="#i-phone"/></svg> +41 79 234 56 78</span>
+          <span class="client-meta__item">DE</span>
+          <span class="client-meta__item">Payment terms 30 days</span>
+          <span class="client-meta__item">Bexio #B-3214</span>
+          <span class="client-meta__item">Member since 01.08.2024</span>
+        </div>
+      </div>
+      <div class="client-actions">
+        <button class="btn btn--secondary btn--sm">Send message</button>
+        <button class="btn btn--secondary btn--sm">Edit</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab tab--active">Profile</div>
+      <div class="tab">Documents <span class="tab__count">4</span></div>
+      <div class="tab">Horses <span class="tab__count">2</span></div>
+      <div class="tab">Communication <span class="tab__count">12</span></div>
+      <div class="tab">Billing</div>
+      <div class="tab">Activity</div>
+    </div>
+
+    <div class="search-bar">
+      <svg class="ico" style="color: var(--ink-500);"><use href="#i-search"/></svg>
+      <input placeholder='Search this client&apos;s docs and history… e.g. "Marta insurance 2026"'/>
+      <span class="search-bar__hint">Reducto-indexed</span>
+    </div>
+
+    <div class="grid">
+      <!-- Horses card (col-4) -->
+      <section class="card col-4">
+        <div class="card__head"><h3 class="card__title">Horses (2)</h3><a href="#" class="card__link">Manage →</a></div>
+        <div class="horses-mini">
+          <div class="horse-mini">
+            <div class="horse-mini__photo">D</div>
+            <div><div class="horse-mini__name">Diva</div><div class="horse-mini__sub">Mare · 12 yr · B7</div></div>
+          </div>
+          <div class="horse-mini">
+            <div class="horse-mini__photo">F</div>
+            <div><div class="horse-mini__name">Festival</div><div class="horse-mini__sub">Gelding · 8 yr · C3</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Spending card (col-8) -->
+      <section class="card col-8">
+        <div class="card__head"><h3 class="card__title">Spending</h3><a href="#" class="card__link">Open billing →</a></div>
+        <div class="spend-summary">
+          <div><div class="spend-stat__lbl">Year-to-date 2026</div><div class="spend-stat__val">6'420.50 CHF</div></div>
+          <div><div class="spend-stat__lbl">2025 full year</div><div class="spend-stat__val" style="color: var(--ink-500);">14'180.00 CHF</div></div>
+        </div>
+        <!-- 12-bar monthly chart, stacked by category -->
+        <div class="spend-chart">
+          <div class="spend-bar"><div class="spend-seg" style="height: 60px;"></div><div class="spend-seg spend-seg--moss" style="height: 10px;"></div><div class="spend-seg spend-seg--ochre" style="height: 6px;"></div></div>
+          <div class="spend-bar"><div class="spend-seg" style="height: 58px;"></div><div class="spend-seg spend-seg--moss" style="height: 12px;"></div><div class="spend-seg spend-seg--ochre" style="height: 4px;"></div></div>
+          <div class="spend-bar"><div class="spend-seg" style="height: 62px;"></div><div class="spend-seg spend-seg--moss" style="height: 8px;"></div><div class="spend-seg spend-seg--ochre" style="height: 8px;"></div></div>
+          <div class="spend-bar"><div class="spend-seg" style="height: 58px;"></div><div class="spend-seg spend-seg--moss" style="height: 14px;"></div></div>
+          <div class="spend-bar"><div class="spend-seg" style="height: 60px;"></div><div class="spend-seg spend-seg--moss" style="height: 16px;"></div><div class="spend-seg spend-seg--ochre" style="height: 6px;"></div></div>
+          <div class="spend-bar"><div class="spend-seg" style="height: 58px;"></div><div class="spend-seg spend-seg--moss" style="height: 10px;"></div></div>
+          <div class="spend-bar"><div class="spend-seg" style="height: 60px;"></div><div class="spend-seg spend-seg--moss" style="height: 18px;"></div><div class="spend-seg spend-seg--ochre" style="height: 12px;"></div></div>
+          <div class="spend-bar"><div class="spend-seg" style="height: 60px;"></div><div class="spend-seg spend-seg--moss" style="height: 12px;"></div><div class="spend-seg spend-seg--ochre" style="height: 8px;"></div></div>
+          <div class="spend-bar"><div class="spend-seg" style="height: 70px;"></div><div class="spend-seg spend-seg--moss" style="height: 20px;"></div><div class="spend-seg spend-seg--ochre" style="height: 10px;"></div></div>
+          <div class="spend-bar"><div class="spend-seg" style="height: 62px;"></div><div class="spend-seg spend-seg--moss" style="height: 8px;"></div></div>
+          <div class="spend-bar"><div class="spend-seg" style="height: 64px;"></div><div class="spend-seg spend-seg--moss" style="height: 14px;"></div><div class="spend-seg spend-seg--ochre" style="height: 4px;"></div></div>
+          <div class="spend-bar"><div class="spend-seg" style="height: 66px;"></div><div class="spend-seg spend-seg--moss" style="height: 16px;"></div><div class="spend-seg spend-seg--ochre" style="height: 6px;"></div></div>
+        </div>
+        <div class="spend-axis"><span>Jun</span><span>Jul</span><span>Aug</span><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span></div>
+        <div class="spend-legend">
+          <span><span class="spend-legend__sw" style="background: var(--terracotta-600);"></span>Boarding</span>
+          <span><span class="spend-legend__sw" style="background: var(--moss-600);"></span>Training</span>
+          <span><span class="spend-legend__sw" style="background: var(--ochre-600);"></span>Care &amp; other</span>
+        </div>
+      </section>
+
+      <!-- Documents card (col-6) -->
+      <section class="card col-6">
+        <div class="card__head"><h3 class="card__title">Documents (4)</h3><a href="#" class="card__link">Upload + →</a></div>
+        <div class="docs">
+          <div class="doc">
+            <div class="doc__icon"><svg class="ico"><use href="#i-doc"/></svg></div>
+            <div><div class="doc__name">Boarding contract 2026</div><div class="doc__meta">contract · 2.1 MB · 12 Aug 2024</div></div>
+            <span class="doc__expiry doc__expiry--ok">expires 31.07.2027</span>
+          </div>
+          <div class="doc">
+            <div class="doc__icon"><svg class="ico"><use href="#i-doc"/></svg></div>
+            <div><div class="doc__name">Insurance — Mobiliar</div><div class="doc__meta">insurance · 480 KB · 04 Jan 2026</div></div>
+            <span class="doc__expiry doc__expiry--warn">expires in 18 days</span>
+          </div>
+          <div class="doc">
+            <div class="doc__icon"><svg class="ico"><use href="#i-doc"/></svg></div>
+            <div><div class="doc__name">ID copy (passport)</div><div class="doc__meta">id_copy · 920 KB · 12 Aug 2024</div></div>
+            <span class="doc__expiry doc__expiry--ok">—</span>
+          </div>
+          <div class="doc">
+            <div class="doc__icon"><svg class="ico"><use href="#i-doc"/></svg></div>
+            <div><div class="doc__name">Vet authorisation — Diva</div><div class="doc__meta">authorisation · 240 KB · 03 Mar 2025</div></div>
+            <span class="doc__expiry doc__expiry--ok">expires 31.12.2027</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Activity timeline (col-6) -->
+      <section class="card col-6">
+        <div class="card__head"><h3 class="card__title">Recent activity</h3><a href="#" class="card__link">Full log →</a></div>
+        <div class="activity">
+          <div class="activity__item">
+            <div class="activity__date">14 May · 06:00</div>
+            <div class="activity__dot activity__dot--ochre"></div>
+            <div>
+              <div class="activity__title">Request — Transport (Avenches CSI)</div>
+              <div class="activity__sub">Pending owner review · auto-expires in 38 min</div>
+            </div>
+          </div>
+          <div class="activity__item">
+            <div class="activity__date">12 May · 16:08</div>
+            <div class="activity__dot"></div>
+            <div>
+              <div class="activity__title">Message — "Soll ich anwesend sein?"</div>
+              <div class="activity__sub">About Diva vet appointment</div>
+            </div>
+          </div>
+          <div class="activity__item">
+            <div class="activity__date">02 May · 09:00</div>
+            <div class="activity__dot activity__dot--moss"></div>
+            <div>
+              <div class="activity__title">Invoice paid — 2026-0142</div>
+              <div class="activity__sub">1'420.50 CHF · April · via Bexio reconciliation</div>
+            </div>
+          </div>
+          <div class="activity__item">
+            <div class="activity__date">01 May · 02:00</div>
+            <div class="activity__dot activity__dot--terr"></div>
+            <div>
+              <div class="activity__title">Subscriptions renewed</div>
+              <div class="activity__sub">Boarding (Diva), Half-board (Festival), Hay supplement</div>
+            </div>
+          </div>
+          <div class="activity__item">
+            <div class="activity__date">22 Apr · 14:00</div>
+            <div class="activity__dot"></div>
+            <div>
+              <div class="activity__title">Event — Riding lesson confirmed</div>
+              <div class="activity__sub">Diva · with Rita · Hall B</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Document Inbox — /owner/inbox/documents</title>
+<meta name="viewport" content="width=1280, initial-scale=1">
+<link rel="stylesheet" href="_tokens.css">
+<style>
+  body { background: var(--paper); margin: 0; font-family: var(--font-sans); color: var(--ink-900); }
+  .app { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; }
+  .rail { background: var(--canvas); border-right: 1px solid var(--ink-100); padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); }
+  .rail__brand { display: flex; align-items: center; gap: var(--space-3); padding-bottom: var(--space-4); border-bottom: 1px solid var(--ink-100); }
+  .rail__plaque { width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--clay-200); color: var(--terracotta-700); display: grid; place-items: center; font-family: var(--font-serif); font-weight: 600; }
+  .rail__name { font-family: var(--font-serif); font-size: var(--fs-lg); font-weight: 500; }
+  .rail__role { font-size: var(--fs-xs); color: var(--ink-500); }
+  .rail__item { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); color: var(--ink-700); font-size: var(--fs-md); position: relative; }
+  .rail__item--active { background: var(--ink-100); color: var(--ink-900); font-weight: 500; }
+  .rail__item--active .ico { color: var(--terracotta-600); }
+  .rail__icon { color: var(--ink-500); }
+  .rail__badge { position: absolute; right: var(--space-3); background: var(--terracotta-600); color: var(--canvas); font-size: var(--fs-xs); padding: 1px 6px; border-radius: 999px; font-weight: 600; }
+  .ico { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+  .main { padding: var(--space-6) var(--space-8); max-width: 1280px; display: grid; grid-template-columns: 1fr 320px; gap: var(--space-6); }
+  .col-list { min-width: 0; }
+
+  .topbar { margin-bottom: var(--space-3); }
+  .topbar__title { font-size: var(--fs-xl); font-weight: 500; letter-spacing: -0.01em; }
+  .topbar__sub { font-size: var(--fs-sm); color: var(--ink-500); margin-top: 2px; }
+
+  /* Address banner */
+  .address-banner { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--canvas); border: 1px solid var(--ink-100); border-radius: var(--radius-md); margin-bottom: var(--space-4); font-size: var(--fs-sm); }
+  .address-banner__lbl { color: var(--ink-500); }
+  .address-banner__addr { font-family: var(--font-mono); color: var(--ink-900); font-weight: 500; padding: 2px var(--space-2); background: var(--ink-100); border-radius: var(--radius-sm); }
+  .address-banner__copy { color: var(--terracotta-600); cursor: default; margin-left: auto; }
+
+  /* Filter chips */
+  .filters { display: flex; gap: var(--space-2); margin-bottom: var(--space-4); flex-wrap: wrap; align-items: center; }
+  .chip { padding: var(--space-1) var(--space-3); border: 1px solid var(--ink-300); border-radius: 999px; font-size: var(--fs-sm); color: var(--ink-700); cursor: default; }
+  .chip--active { background: var(--ink-900); color: var(--canvas); border-color: var(--ink-900); }
+  .chip--ochre { background: var(--ochre-200); color: var(--ochre-600); border-color: var(--ochre-200); }
+  .chip__count { font-family: var(--font-mono); font-size: var(--fs-xs); margin-left: var(--space-1); opacity: 0.7; }
+
+  /* Bulk actions bar */
+  .bulk-bar { display: flex; gap: var(--space-3); align-items: center; padding: var(--space-3) var(--space-4); background: var(--clay-200); border-radius: var(--radius-md); margin-bottom: var(--space-4); font-size: var(--fs-sm); color: var(--terracotta-700); }
+  .bulk-bar__count { font-weight: 500; }
+  .bulk-bar__actions { margin-left: auto; display: flex; gap: var(--space-2); }
+
+  /* Document row */
+  .doc-row { display: grid; grid-template-columns: 64px 1fr auto; gap: var(--space-4); padding: var(--space-4); background: var(--canvas); border: 1px solid var(--ink-100); border-radius: var(--radius-md); margin-bottom: var(--space-3); align-items: start; }
+  .doc-row__check { padding-top: 2px; }
+  .doc-row__check input { width: 18px; height: 18px; }
+  .doc-row__thumb { width: 64px; height: 80px; background: var(--paper); border: 1px solid var(--ink-300); border-radius: var(--radius-sm); display: grid; place-items: center; color: var(--ink-500); font-size: var(--fs-xs); font-family: var(--font-mono); position: relative; overflow: hidden; }
+  .doc-row__thumb::after { content: 'PDF'; position: absolute; bottom: 4px; right: 4px; font-size: 9px; background: var(--rust-600); color: var(--canvas); padding: 1px 4px; border-radius: 2px; }
+  .doc-row__thumb--img::after { content: 'IMG'; background: var(--ink-500); }
+  .doc-row__body { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+  .doc-row__title { font-size: var(--fs-md); font-weight: 500; }
+  .doc-row__meta { font-size: var(--fs-xs); color: var(--ink-500); display: flex; gap: var(--space-3); flex-wrap: wrap; }
+  .source-pill { font-size: var(--fs-xs); padding: 1px var(--space-2); border-radius: 999px; font-family: var(--font-mono); }
+  .source-pill--email { background: var(--ink-100); color: var(--ink-700); }
+  .source-pill--alias { background: var(--clay-200); color: var(--terracotta-700); }
+  .source-pill--share { background: var(--moss-200); color: var(--moss-600); }
+  .source-pill--camera { background: var(--moss-200); color: var(--moss-600); }
+  .source-pill--bulk { background: var(--ochre-200); color: var(--ochre-600); }
+
+  .triage { display: flex; gap: var(--space-3); align-items: center; padding: var(--space-2) var(--space-3); background: var(--paper); border-radius: var(--radius-sm); border-left: 2px solid var(--moss-600); }
+  .triage--warn { border-left-color: var(--ochre-600); }
+  .triage--low { border-left-color: var(--rust-600); }
+  .triage--alias { border-left-color: var(--terracotta-600); background: var(--clay-200); }
+  .triage__field { font-size: var(--fs-sm); }
+  .triage__lbl { font-size: var(--fs-xs); color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.04em; }
+  .triage__val { color: var(--ink-900); font-weight: 500; display: flex; align-items: center; gap: var(--space-2); }
+  .triage__val select { font-size: var(--fs-sm); padding: 2px var(--space-2); border: 1px solid var(--ink-300); border-radius: var(--radius-sm); background: var(--canvas); }
+  .conf-pill { font-size: var(--fs-xs); padding: 1px var(--space-2); border-radius: 999px; font-family: var(--font-mono); }
+  .conf-pill--high { background: var(--moss-200); color: var(--moss-600); }
+  .conf-pill--mid { background: var(--ochre-200); color: var(--ochre-600); }
+  .conf-pill--low { background: var(--rust-200); color: var(--rust-600); }
+
+  .doc-row__actions { display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-end; }
+
+  .quarantine-banner { background: var(--ochre-200); color: var(--ochre-600); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); margin-bottom: var(--space-4); font-size: var(--fs-sm); display: flex; align-items: center; gap: var(--space-3); }
+
+  /* Sidebar */
+  .col-side { display: flex; flex-direction: column; gap: var(--space-4); }
+  .side-card { background: var(--canvas); border: 1px solid var(--ink-100); border-radius: var(--radius-md); padding: var(--space-4); }
+  .side-card__title { font-size: var(--fs-xs); color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: var(--space-3); }
+  .side-card__row { display: flex; justify-content: space-between; align-items: center; padding: var(--space-2) 0; border-top: 1px solid var(--ink-100); font-size: var(--fs-sm); }
+  .side-card__row:first-of-type { border-top: 0; }
+  .side-card__row code { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink-700); padding: 2px var(--space-2); background: var(--ink-100); border-radius: 2px; }
+  .alias-row { display: flex; flex-direction: column; gap: 4px; padding: var(--space-2) 0; border-top: 1px solid var(--ink-100); font-size: var(--fs-sm); }
+  .alias-row:first-of-type { border-top: 0; }
+  .alias-row__addr { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink-700); padding: 2px var(--space-2); background: var(--ink-100); border-radius: 2px; }
+  .alias-row__entity { font-size: var(--fs-xs); color: var(--ink-500); }
+  .tip { font-size: var(--fs-xs); color: var(--ink-500); line-height: 1.6; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h4v-6h6v6h4V10"/></symbol>
+    <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1 3h6l1-3h5"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 7 9-7"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.5 10.5l7-3M8.5 13.5l7 3"/></symbol>
+    <symbol id="i-cam" viewBox="0 0 24 24"><path d="M3 8h4l2-3h6l2 3h4v11H3z"/><circle cx="12" cy="13" r="4"/></symbol>
+    <symbol id="i-zip" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M10 5v2M10 9v2M10 13v2"/></symbol>
+    <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18h.01"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 4H6a2 2 0 0 0-2 2v10"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <aside class="rail">
+    <div class="rail__brand"><div class="rail__plaque">LF</div><div><div class="rail__name">La Fattoria</div><div class="rail__role">Anna Frei</div></div></div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-home"/></svg>Overview</div>
+    <div class="rail__item rail__item--active"><svg class="ico rail__icon"><use href="#i-inbox"/></svg>Document inbox<span class="rail__badge">7</span></div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-doc"/></svg>All documents</div>
+  </aside>
+
+  <main class="main">
+    <div class="col-list">
+      <div class="topbar">
+        <div class="topbar__title">Document inbox</div>
+        <div class="topbar__sub">7 documents waiting for review · Confirm to file them on the right horse or client.</div>
+      </div>
+
+      <div class="address-banner">
+        <svg class="ico" style="color: var(--terracotta-600);"><use href="#i-mail"/></svg>
+        <span class="address-banner__lbl">Forward anything to</span>
+        <span class="address-banner__addr">documents.lafattoria@inbox.stableplatform.ch</span>
+        <span class="address-banner__copy"><svg class="ico" style="width: 14px; height: 14px;"><use href="#i-copy"/></svg> Copy address</span>
+      </div>
+
+      <div class="quarantine-banner">
+        <svg class="ico"><use href="#i-warn"/></svg>
+        <span><strong>2 documents</strong> from unknown senders are in quarantine. Review and approve sender domain to skip quarantine next time.</span>
+        <span style="margin-left: auto; color: var(--ochre-600); font-weight: 500; cursor: default;">Open quarantine →</span>
+      </div>
+
+      <div class="filters">
+        <span class="chip chip--active">Pending review <span class="chip__count">7</span></span>
+        <span class="chip">Email <span class="chip__count">5</span></span>
+        <span class="chip">Mobile / share <span class="chip__count">1</span></span>
+        <span class="chip">Bulk import <span class="chip__count">1</span></span>
+        <span class="chip chip--ochre">Quarantine <span class="chip__count">2</span></span>
+        <span class="chip">Recently confirmed <span class="chip__count">42</span></span>
+        <span class="chip">Rejected <span class="chip__count">1</span></span>
+      </div>
+
+      <div class="bulk-bar">
+        <span class="bulk-bar__count">3 high-confidence rows pre-selected (≥0.9)</span>
+        <span style="opacity: 0.7;">·</span>
+        <span>One tap confirms all three</span>
+        <div class="bulk-bar__actions">
+          <button class="btn btn--secondary btn--sm">Deselect all</button>
+          <button class="btn btn--primary btn--sm">Confirm selected (3)</button>
+        </div>
+      </div>
+
+      <!-- Row 1: high-conf email -->
+      <div class="doc-row">
+        <div class="doc-row__check"><input type="checkbox" checked/></div>
+        <div class="doc-row__thumb">vet</div>
+        <div class="doc-row__body">
+          <div class="doc-row__title">Influenza vaccination report — May 2026.pdf</div>
+          <div class="doc-row__meta">
+            <span class="source-pill source-pill--email">📧 email</span>
+            <span>From: Dr. T. Brunner &lt;t.brunner@vetbrunner.ch&gt;</span>
+            <span>Received 14 May, 14:08</span>
+            <span>720 KB · 2 pages</span>
+          </div>
+          <div class="triage">
+            <div class="triage__field"><div class="triage__lbl">Entity</div><div class="triage__val">Diva <span class="conf-pill conf-pill--high">0.92</span></div></div>
+            <div class="triage__field"><div class="triage__lbl">Kind</div><div class="triage__val">vet</div></div>
+            <div class="triage__field"><div class="triage__lbl">Expires</div><div class="triage__val">—</div></div>
+            <div class="triage__field"><div class="triage__lbl">Owner</div><div class="triage__val">Marta Keller</div></div>
+          </div>
+        </div>
+        <div class="doc-row__actions">
+          <button class="btn btn--primary btn--sm">Confirm</button>
+          <button class="btn btn--ghost btn--sm">Edit</button>
+          <button class="btn btn--ghost btn--sm" style="color: var(--rust-600);">Reject</button>
+        </div>
+      </div>
+
+      <!-- Row 2: alias-routed (no triage needed for entity) -->
+      <div class="doc-row">
+        <div class="doc-row__check"><input type="checkbox" checked/></div>
+        <div class="doc-row__thumb">ins</div>
+        <div class="doc-row__body">
+          <div class="doc-row__title">Versicherungsschein 2026 — Mobiliar.pdf</div>
+          <div class="doc-row__meta">
+            <span class="source-pill source-pill--alias">🐎 alias</span>
+            <span>To: <code style="background: var(--clay-200); color: var(--terracotta-700); padding: 1px 4px; border-radius: 2px; font-family: var(--font-mono); font-size: 11px;">marta-keller.lafattoria@…</code></span>
+            <span>From: noreply@mobiliar.ch</span>
+            <span>Received 14 May, 11:32</span>
+          </div>
+          <div class="triage triage--alias">
+            <div class="triage__field"><div class="triage__lbl">Entity (from alias)</div><div class="triage__val">Marta Keller (auto)</div></div>
+            <div class="triage__field"><div class="triage__lbl">Kind</div><div class="triage__val"><select><option>insurance</option><option>contract</option></select></div></div>
+            <div class="triage__field"><div class="triage__lbl">Expires</div><div class="triage__val">31.12.2026 <span class="conf-pill conf-pill--high">0.95</span></div></div>
+          </div>
+        </div>
+        <div class="doc-row__actions">
+          <button class="btn btn--primary btn--sm">Confirm</button>
+          <button class="btn btn--ghost btn--sm">Edit</button>
+          <button class="btn btn--ghost btn--sm" style="color: var(--rust-600);">Reject</button>
+        </div>
+      </div>
+
+      <!-- Row 3: mid-conf, share-target -->
+      <div class="doc-row">
+        <div class="doc-row__check"><input type="checkbox"/></div>
+        <div class="doc-row__thumb">far</div>
+        <div class="doc-row__body">
+          <div class="doc-row__title">Hufschmied-Quittung 220504.pdf</div>
+          <div class="doc-row__meta">
+            <span class="source-pill source-pill--share">📤 share-target</span>
+            <span>From: Anna Frei (mobile share)</span>
+            <span>Received 14 May, 09:44</span>
+            <span>180 KB · 1 page</span>
+          </div>
+          <div class="triage triage--warn">
+            <div class="triage__field"><div class="triage__lbl">Entity</div><div class="triage__val">Akira <span class="conf-pill conf-pill--mid">0.78</span></div></div>
+            <div class="triage__field"><div class="triage__lbl">Kind</div><div class="triage__val"><select><option>farrier</option><option>invoice_attachment</option></select></div></div>
+            <div class="triage__field"><div class="triage__lbl">Expires</div><div class="triage__val">—</div></div>
+            <div class="triage__field"><div class="triage__lbl">Owner</div><div class="triage__val">Lukas Zimmermann</div></div>
+          </div>
+        </div>
+        <div class="doc-row__actions">
+          <button class="btn btn--primary btn--sm">Confirm</button>
+          <button class="btn btn--ghost btn--sm">Edit</button>
+          <button class="btn btn--ghost btn--sm" style="color: var(--rust-600);">Reject</button>
+        </div>
+      </div>
+
+      <!-- Row 4: low-conf email — ambiguous -->
+      <div class="doc-row">
+        <div class="doc-row__check"><input type="checkbox"/></div>
+        <div class="doc-row__thumb">?</div>
+        <div class="doc-row__body">
+          <div class="doc-row__title">Rechnung_Mai_2026.pdf</div>
+          <div class="doc-row__meta">
+            <span class="source-pill source-pill--email">📧 email</span>
+            <span>From: buchhaltung@heumueller-ag.ch</span>
+            <span>Received 13 May, 16:02</span>
+            <span>240 KB</span>
+          </div>
+          <div class="triage triage--low">
+            <div class="triage__field"><div class="triage__lbl">Entity</div><div class="triage__val">Stable (general) <span class="conf-pill conf-pill--low">0.42</span></div></div>
+            <div class="triage__field"><div class="triage__lbl">Kind</div><div class="triage__val"><select><option>invoice_attachment</option><option>contract</option><option>other</option></select></div></div>
+            <div class="triage__field"><div class="triage__lbl">Expires</div><div class="triage__val">—</div></div>
+          </div>
+          <div style="font-size: var(--fs-xs); color: var(--ink-500); padding: var(--space-2) var(--space-3);">⚠ Low confidence — couldn't match a horse or client name. Please pick the right entity manually.</div>
+        </div>
+        <div class="doc-row__actions">
+          <button class="btn btn--secondary btn--sm">Pick entity →</button>
+          <button class="btn btn--ghost btn--sm" style="color: var(--rust-600);">Reject</button>
+        </div>
+      </div>
+
+      <!-- Row 5: image from camera -->
+      <div class="doc-row">
+        <div class="doc-row__check"><input type="checkbox"/></div>
+        <div class="doc-row__thumb doc-row__thumb--img">jpg</div>
+        <div class="doc-row__body">
+          <div class="doc-row__title">IMG_20260513_142302.jpg</div>
+          <div class="doc-row__meta">
+            <span class="source-pill source-pill--camera">📷 camera</span>
+            <span>From: Anna Frei (mobile)</span>
+            <span>Received 13 May, 14:23</span>
+            <span>2.1 MB</span>
+          </div>
+          <div class="triage triage--warn">
+            <div class="triage__field"><div class="triage__lbl">Entity</div><div class="triage__val">Festival <span class="conf-pill conf-pill--mid">0.74</span></div></div>
+            <div class="triage__field"><div class="triage__lbl">Kind</div><div class="triage__val"><select><option>vet</option><option>other</option></select></div></div>
+            <div class="triage__field"><div class="triage__lbl">Expires</div><div class="triage__val">—</div></div>
+          </div>
+        </div>
+        <div class="doc-row__actions">
+          <button class="btn btn--primary btn--sm">Confirm</button>
+          <button class="btn btn--ghost btn--sm">Edit</button>
+          <button class="btn btn--ghost btn--sm" style="color: var(--rust-600);">Reject</button>
+        </div>
+      </div>
+
+      <!-- Row 6: bulk import -->
+      <div class="doc-row">
+        <div class="doc-row__check"><input type="checkbox"/></div>
+        <div class="doc-row__thumb">old</div>
+        <div class="doc-row__body">
+          <div class="doc-row__title">Pferdepass-Diva-2018.pdf</div>
+          <div class="doc-row__meta">
+            <span class="source-pill source-pill--bulk">📦 bulk import</span>
+            <span>From onboarding ZIP</span>
+            <span>Imported 12 May, 11:08</span>
+            <span>1 of 47 in batch</span>
+          </div>
+          <div class="triage">
+            <div class="triage__field"><div class="triage__lbl">Entity</div><div class="triage__val">Diva <span class="conf-pill conf-pill--high">0.97</span></div></div>
+            <div class="triage__field"><div class="triage__lbl">Kind</div><div class="triage__val">passport</div></div>
+            <div class="triage__field"><div class="triage__lbl">Expires</div><div class="triage__val">—</div></div>
+          </div>
+        </div>
+        <div class="doc-row__actions">
+          <button class="btn btn--primary btn--sm">Confirm</button>
+          <button class="btn btn--secondary btn--sm">Confirm + 46 more</button>
+          <button class="btn btn--ghost btn--sm" style="color: var(--rust-600);">Reject</button>
+        </div>
+      </div>
+
+      <div style="text-align: center; padding: var(--space-3); font-size: var(--fs-sm); color: var(--ink-500);">… 1 more pending document</div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="col-side">
+      <div class="side-card">
+        <div class="side-card__title">This week</div>
+        <div class="side-card__row"><span>Inbound emails</span><span><strong>14</strong></span></div>
+        <div class="side-card__row"><span>Auto-confirmed (alias)</span><span style="color: var(--moss-600);">3</span></div>
+        <div class="side-card__row"><span>High-conf (≥0.9)</span><span style="color: var(--moss-600);">5</span></div>
+        <div class="side-card__row"><span>Needs review</span><span style="color: var(--ochre-600);">7</span></div>
+        <div class="side-card__row"><span>Quarantined</span><span style="color: var(--ochre-600);">2</span></div>
+        <div class="side-card__row"><span>Reducto cost (May)</span><span><code>$3.20 / $50</code></span></div>
+      </div>
+
+      <div class="side-card">
+        <div class="side-card__title">Active aliases</div>
+        <div class="alias-row">
+          <span class="alias-row__addr">diva.lafattoria@inbox.stableplatform.ch</span>
+          <span class="alias-row__entity">Horse: Diva · default kind: vet · 4 emails this month</span>
+        </div>
+        <div class="alias-row">
+          <span class="alias-row__addr">marta-keller.lafattoria@inbox.stableplatform.ch</span>
+          <span class="alias-row__entity">Client: Marta Keller · 2 emails this month</span>
+        </div>
+        <div class="alias-row">
+          <span class="alias-row__addr">akira.lafattoria@inbox.stableplatform.ch</span>
+          <span class="alias-row__entity">Horse: Akira · default kind: farrier · 1 email this month</span>
+        </div>
+        <button class="btn btn--ghost btn--sm" style="margin-top: var(--space-3); width: 100%;">+ New alias</button>
+      </div>
+
+      <div class="side-card">
+        <div class="side-card__title">How to use</div>
+        <div class="tip">
+          <strong>1.</strong> Forward any vet/farrier/insurance email to <code>documents.lafattoria@…</code>. We extract, propose where it fits, you confirm.<br><br>
+          <strong>2.</strong> For frequent senders (your vet) generate a <strong>per-entity alias</strong> on the horse profile. Hand it to Dr. Brunner — emails skip the AI guessing.<br><br>
+          <strong>3.</strong> On your phone, share any PDF to Stable Crew, or scan paper documents with the camera.<br><br>
+          <strong>4.</strong> Bulk historical import is in onboarding settings.
+        </div>
+      </div>
+    </aside>
+  </main>
+</div>
+</body>
+</html>

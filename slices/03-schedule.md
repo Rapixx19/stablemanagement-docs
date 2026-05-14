@@ -14,6 +14,13 @@ Owner creates events and attaches horses + people. Clients see events involving 
 
 1. **Calendar view** at `/schedule`. Month / week / day views. Color-coded by event kind. Click a day → drawer with that day's events.
 2. **Event create/edit modal**. Fields: kind, title, starts_at, ends_at, all-day toggle, recurrence (RRULE picker), horses (multi-select), people (multi-select with role), location, visibility, notes.
+
+   **Anmeldung aktivieren section** (collapsed by default, applies to `clinic`/`competition`/`lesson`/`training`/`social` kinds). When toggled on:
+   - **Service** from catalog (slice 05) — links the booking to a billable service ("Springkurs CHF 380").
+   - **Capacity** (1 = exclusive, N = group). Default 1.
+   - **Sign-up deadline** (`signup_closes_at`), default = `starts_at − 24h`.
+   - **Visibility** auto-set to `public_stable` when toggle activates (clients must see it to sign up); owner can override to `public_open`.
+   On save, a **single transaction** inserts the `events` row AND a linked `availability_slots` row (slice 11) with `event_id` set. Full bridge spec — atomic create flow, cascade rules on event edit/cancel/delete, `SignupClosed` deadline enforcement, visibility coupling — in `domains/event-signup.md`.
 3. **Recurrence editing UI.** When editing a recurring event: "this occurrence only" / "this and future" / "the entire series." RFC 5545 RRULE compliant.
 4. **Today widget** (used by dashboard slice 16).
 
@@ -46,6 +53,10 @@ create table events (
   visibility text not null default 'private' check (visibility in ('private','public_stable','public_open')),
   location text,
   notes text,
+  signup_enabled boolean not null default false,    -- "Anmeldung aktivieren" toggle
+  signup_service_id uuid references services(id),   -- non-null when signup_enabled
+  signup_capacity int,                              -- non-null when signup_enabled
+  signup_closes_at timestamptz,                     -- non-null when signup_enabled; default = starts_at - 24h
   cancelled_at timestamptz,
   created_by_user_id uuid not null references auth.users(id),
   created_at timestamptz not null default now(),

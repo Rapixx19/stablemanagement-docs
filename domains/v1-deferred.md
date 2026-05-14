@@ -10,11 +10,11 @@ The discipline document. Every item below was considered, scoped, and explicitly
 - **Why V1.1 is right**: it's the differentiator from competitors. We need V1 stable first, then this.
 - **Effort estimate**: 4–6 weeks, 2 engineers + vet domain reviewer.
 
-### Inventory forecasting (basic inventory now in V1)
+### Inventory module
 
-- **What's in V1**: stock-on-hand, low-stock badges, worker quick-consume, one-tap reorder POs, supplier email — see `slices/17-inventory.md`.
-- **Why deferred to V1.5**: consumption-rate forecasting (time-to-stockout, dynamic thresholds, auto-reorder triggers) needs ~6 weeks of `inventory_movements` data. Sits naturally with the V1.5 ML layer.
-- **Effort**: 3 dev-days once the ledger has data.
+- **Why deferred** (decision 2026-05-13): V1 pilot scope holds at 16 slices. Inventory was specced at "Polish" phase but conflicted with `README.md` and `TODOS.md`, which both already listed it as deferred. Resolved in favour of the smaller pilot — La Fattoria runs the clipboard for one more cycle, and we ship inventory in the V1.1 wave.
+- **What V1.1 ships**: stock-on-hand, low-stock badges, worker quick-consume, one-tap reorder POs, supplier email — full spec preserved in `slices/17-inventory.md` (5 dev-days).
+- **V1.5 follow-on**: consumption-rate forecasting (time-to-stockout, dynamic thresholds, auto-reorder triggers) needs ~6 weeks of `inventory_movements` data, so it sits with the V1.5 ML layer. Adds 3 dev-days once the ledger has data.
 
 ### Reporting module
 
@@ -35,6 +35,12 @@ The discipline document. Every item below was considered, scoped, and explicitly
 
 - **Why deferred**: workers attach a photo to a completed task ("water tank refilled, see photo"). Adds visual proof. Increases storage cost.
 - **Effort**: 1 week.
+
+### Worker mobile quick-add for tab_lines
+
+- **Why deferred** (decision 2026-05-13): real-world workflow signal — barn workers generate billable events (Marco gives a lesson, Sara sells extra hay). V1 keeps the billing trust boundary at owner because (a) the fraud surface widens once workers touch financials, (b) La Fattoria's pilot owner is on-site daily and absorbs the friction, (c) we want pilot data on how often this gap bites before designing for it.
+- **What V1.1 ships**: worker mobile screen at `/worker/billing/quick-add`. Two-tap flow restricted to **pinned catalog services only** (no free-text description, no `unit_price` override). RLS check: `INSERT` allowed only when `created_by_user_id = auth.uid()` AND `unit_price_cents = services.default_price_cents` AND `service_id IN (pinned subset)`. Owner can revoke any line within 24h via existing remove-line-item flow. Audit log captures the worker actor.
+- **Effort**: 1 dev-day on top of slice 06's existing schema (no schema change — `created_by_user_id` already there). Adds 1 worker route + 1 RLS policy + 3 acceptance tests.
 
 ### Auto-scheduler / shift template generator
 

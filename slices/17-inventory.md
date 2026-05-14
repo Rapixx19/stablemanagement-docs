@@ -1,6 +1,8 @@
 # Slice 17 — Inventory and Reordering (basic)
 
-**Phase:** Polish · **Estimate:** 5 dev-days · **Owner:** Sharad backend, freelancer frontend
+> **DEFERRED TO V1.1** (decision 2026-05-13). Not built in V1 pilot. Spec kept intact here so V1.1 doesn't redo the work. Schema, RLS, acceptance criteria below are the V1.1 starting point. See `domains/v1-deferred.md` for rationale.
+
+**Phase:** V1.1 · **Estimate:** 5 dev-days · **Owner:** Sharad backend, freelancer frontend
 
 The daily-pain feature. Feed, bedding, medication, supplies — currently tracked on a clipboard. V1 ships stock-on-hand + worker-recorded consumption + one-tap reorder. Forecasting (consumption rate, time-to-stockout, auto-reorder) is V1.5 alongside the ML layer.
 

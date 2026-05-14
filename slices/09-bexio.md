@@ -8,6 +8,17 @@ Push-only sync to Bexio (the Swiss SMB accounting platform with ~80–100k users
 
 Owner connects their Bexio account once via OAuth. Confirmed invoices push to Bexio with line items + QR-bill PDF. A scheduled poll (every 30 min) updates our invoice status when Bexio marks paid.
 
+## Scope and choice
+
+Bexio is an **optional** integration in V1 — not a hard dependency. During onboarding (slice 16) and at any time after via `/owner/settings/billing`, the stable picks one of two accounting workflows:
+
+- **Bexio** — full push + 30-min reconciliation (the path this slice specs). Recommended for the ~80% of CH SMB stables already on Bexio.
+- **Kein/Anderes** — no automated integration. Owner uses the **manual mark-paid** action + **invoice CSV export** (both specced in slice 08) to bridge into their own bookkeeping tool (Banana, KLARA, CashCtrl, paper). Reconciliation is manual: owner sees the bank statement, ticks the invoice paid in our app.
+
+The choice is **per-stable**, not per-invoice. Switching from Bexio to Kein revokes tokens and stops the poll (reversible — re-OAuth restores the connection). Default = decided at pilot kickoff with the stable owner; La Fattoria's default captured in the slice 16 onboarding script.
+
+When stable has no active `bexio_connections` row, everything in this slice is dormant — no cron poll, no push button, no sync-issues panel entries from this slice. The settings page renders the "Kein" state with a "Mit Bexio verbinden" CTA.
+
 ## What ships
 
 ### Owner side
@@ -40,7 +51,9 @@ create table bexio_connections (
   last_poll_at timestamptz,
   last_refresh_at timestamptz,               -- proactive keep-alive on day 25 of refresh-token life
   last_error text,
+  last_error_class text,                       -- 'AdvisoryLockTimeout', 'BexioRefreshTokenRace', etc.
   active boolean not null default true,
+  version int not null default 0,              -- optimistic locking (E-CQ-2)
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (stable_id)
@@ -76,14 +89,22 @@ create index on bexio_sync_log (stable_id, entity, entity_id);
 
 Tokens encrypted at rest using `pgcrypto` symmetric encryption (`pgp_sym_encrypt`/`pgp_sym_decrypt`) with the key in a Vercel env var (`BEXIO_TOKEN_ENCRYPTION_KEY`, marked `Sensitive`). **Columns are `bytea`, not `text`** (per `DECISIONS.md` D8). The key is passed in by the server action on every call via `set_config('app.crypto_key', $1, true)` (txn-local) inside the same TX as the decrypt — required because the transaction-mode pooler discards session state between transactions. Never logged, never sent to Sentry, scrubbed from request snapshots. Recovery + rotation procedure: `runbooks/bexio-token-recovery.md`. See `domains/secrets.md`.
 
+## RLS
+
+All three tables scoped by `stable_id` per `domains/rls.md`. Bexio is owner-business data — workers and clients have no access.
+
+- `bexio_connections`: `owner` SELECT/UPDATE (UPDATE limited to `active` flag — full row mutation goes through OAuth flow). **`worker` / `client`: no access.** Plaintext tokens never returned by SELECT (the `bytea` columns are returned but never decrypted in user-facing reads — only inside server actions that need them).
+- `bexio_article_map`: `owner` full access. `worker`/`client`: no access.
+- `bexio_sync_log`: `owner` SELECT only. INSERT happens via server actions / cron under the service-action context. **No UPDATE/DELETE for any role** — the log is append-only.
+
 ## Reconciliation poll details
 
 - Runs every 30 min via **Vercel Cron** (`/api/cron/bexio-poll`, secured by a `CRON_SECRET` shared header — see `domains/secrets.md`)
 - For each connected stable: fetch invoices updated since `last_poll_at`
 - Match by `bexio_invoice_id` on our `invoices` table
-- Update `status`, `paid_at` if Bexio reports paid
+- Update `status`, `paid_at`, **`paid_source='bexio'`** if Bexio reports paid (distinguishes from manual mark-paid path, slice 08)
 - Update `last_poll_at` only on success (per-stable; one stable's failure must not block others)
-- Backoff on auth errors (token expired); refresh token, retry once. **OAuth refresh is serialized per stable** via a Postgres advisory lock keyed on `stable_id` to prevent two concurrent poll runs from both refreshing and invalidating each other's tokens.
+- Backoff on auth errors (token expired); refresh token, retry once. **OAuth refresh is serialized per stable** via a Postgres advisory lock keyed on `stable_id` to prevent two concurrent poll runs from both refreshing and invalidating each other's tokens. Lock acquired with `pg_try_advisory_xact_lock(hashtext('bexio-refresh:' || stable_id::text))` + 5-second SELECT timeout — if not acquired, log `AdvisoryLockTimeout` rescue path (see below), skip this run, retry next cycle. If 3 consecutive cycles miss the lock, surface in connection panel + page Sharad.
 
 ## Bexio API quirks (handle)
 
@@ -92,6 +113,20 @@ Tokens encrypted at rest using `pgcrypto` symmetric encryption (`pgp_sym_encrypt
 - **Article (service) sync via `bexio_article_map`.** First push of a service creates the Bexio article and stores the mapping; subsequent pushes reuse the stored `bexio_article_id`. Prevents duplicate-article creation in the customer's Bexio account.
 - **Refresh-token keep-alive.** Refresh tokens expire in 30 days. A nightly Vercel Cron at `/api/cron/bexio-keepalive` proactively refreshes any connection where `last_refresh_at < now() - interval '25 days'`, so a stable that doesn't push for a month doesn't lose its connection silently.
 - QR-bill PDF can be generated by Bexio if their account is QR-IBAN configured. We push our PDF as attachment regardless — single source of truth is our app, not Bexio.
+
+## Failure modes & rescue paths
+
+Every failure class is named, caught, and surfaced via `/billing/invoices/sync-issues`. All rescue paths log to Sentry with `stable_id`, `entity`, `entity_id`, `error_class`, set `bexio_connections.last_error` + `last_error_class`, and write a `bexio_sync_log` row with `status='error'`.
+
+| Error class | Trigger | UX | Recovery |
+|---|---|---|---|
+| `AdvisoryLockTimeout` | Cannot acquire per-stable refresh lock within 5s | Silent on first miss; connection panel banner after 3 consecutive misses; Sharad paged via Slack | Lock auto-releases at end of holding TX; next 30-min cycle retries. If persistent, investigate stuck cron handler |
+| `BexioRefreshTokenRace` | Refresh-token API returns `invalid_grant` despite advisory lock (rare leak-through) | Connection auto-marked `active=false`; banner: "Bexio-Verbindung verloren — bitte neu autorisieren"; pages Sharad | Owner re-runs OAuth from `/settings/integrations/bexio`; `runbooks/bexio-token-recovery.md` |
+| `BexioLineValidationError` | Bexio returns 422 on push with field-level error (e.g., VAT code mismatch) | Sync-issues row with parsed field path + deep-link to the offending catalog/service entry; copy: "Position N: VAT-Code stimmt nicht mit Bexio überein — Katalog prüfen" | Owner fixes catalog VAT or contact data; manual retry button |
+| `BexioRateLimit429` | 6 consecutive 429 responses within the per-token queue | Push lands in DLQ; sync-issues row; no immediate owner action required | Auto-retry with exponential backoff; if DLQ row count > 10/h, page Sharad |
+| `BexioApiUnreachable` | Network timeout / 5xx from Bexio (not 4xx) | Sync-issues row "Bexio temporär nicht erreichbar"; auto-retries 5× over 1h | If still failing after 1h, surface as connection-panel banner |
+
+**DLQ overflow alert (operational)**: Sentry rule `bexio_sync_log` rows where `status='error' AND at > now() - interval '1h' COUNT > 10` → page Sharad on Slack `#stable-prod`. Also surfaced in the connection panel as "N Synchronisationsfehler in der letzten Stunde."
 
 ## Acceptance criteria
 
@@ -108,6 +143,14 @@ Tokens encrypted at rest using `pgcrypto` symmetric encryption (`pgp_sym_encrypt
 - [ ] **Orphan handling**: Bexio returns an invoice in the poll that has no matching `bexio_invoice_id` in our DB → we log it, do not crash, do not create a phantom invoice. Surface count of orphans in the connection panel.
 - [ ] Disconnecting Bexio in settings revokes tokens and stops polling
 - [ ] Push to a disconnected Bexio shows a clear error, doesn't silently fail
+- [ ] **`AdvisoryLockTimeout` rescue**: held lock simulated for 6s → next cron run logs `AdvisoryLockTimeout`, `last_error_class` set, skips, returns success-no-op (does not crash)
+- [ ] **`AdvisoryLockTimeout` escalation**: 3 consecutive missed cycles → connection panel banner shown, Sentry alert fired
+- [ ] **`BexioLineValidationError` rescue**: mock 422 with `lines[3].vat_code` field-error → sync-issues row shows "Position 4: VAT-Code stimmt nicht mit Bexio überein" with deep-link to the offending service in catalog
+- [ ] **`BexioRefreshTokenRace` rescue**: mock returns `invalid_grant` post-lock → connection auto-marked `active=false`, banner shown, Sentry alert fired, retry only succeeds after owner re-OAuths
+- [ ] **DLQ overflow alert**: insert 11 `bexio_sync_log` rows with `status='error'` in a 1h window → Sentry rule fires, Slack `#stable-prod` receives page (mocked in CI via Sentry webhook capture)
+- [ ] **Token-leak audit**: full `audit_log` snapshot after 10 push+poll cycles → no `oauth_access_token` / `oauth_refresh_token` raw value appears anywhere; same check on Sentry breadcrumb capture
+- [ ] **Article-map dedup**: push the same service in 5 invoices → exactly 1 `bexio_article_map` row, exactly 1 Bexio article created (mock asserts 1 article-create call across 5 pushes)
+- [ ] **No worker/client access**: worker context SELECT on `bexio_connections` returns 0 rows; same for `bexio_sync_log`, `bexio_article_map`
 
 ## Acceptance integration test
 

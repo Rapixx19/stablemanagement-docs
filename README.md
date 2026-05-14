@@ -35,16 +35,16 @@ docs/                                  This folder
 
 ## Build sequence
 
-17 vertical slices, ~17–18 weeks for 2 engineers. Each slice ships end-to-end (schema → API → UI → test → demo to La Fattoria). See `slices/00-foundation.md` through `slices/16-pilot.md`.
+18 vertical slices, ~20–22 weeks for 2 engineers + freelancer (revised 2026-05-14 per `/plan-ceo-review` HOLD SCOPE session). Each slice ships end-to-end (schema → API → UI → test → demo to La Fattoria). See `slices/00-foundation.md` through `slices/16-pilot.md`. Slice 01 was split into 01a (people + horses + photos + profile UI, 5 dev-days) and 01b (unified documents + 5-path ingestion + Reducto search + email aliases, 9 dev-days) per D14/D15.
 
 | Phase | Weeks | Slices |
 |---|---|---|
 | Foundation | 1–2 | 00 |
-| Operational core | 3–7 | 01–04 |
-| Billing | 8–11 | 05–09 |
-| Comms + booking | 12–13 | 10–11 |
-| Worker | 14–15 | 12–15 |
-| Polish + pilot | 16–18 | 16 |
+| Operational core | 3–8 | 01a, 01b, 02, 03, 04 |
+| Billing | 9–12 | 05, 06, 07, 08, 09 |
+| Comms + booking | 13–14 | 10, 11 |
+| Worker | 15–16 | 12, 13, 14, 15 |
+| Polish + pilot | 17–20 | 16 |
 
 ## How to read these docs
 

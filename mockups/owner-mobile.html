@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<title>Owner Dashboard — Viewport Progression (DES-LOCK-2)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="_tokens.css">
+<style>
+  body { background: var(--ink-100); margin: 0; padding: var(--space-8); font-family: var(--font-sans); color: var(--ink-900); }
+  .container { max-width: 1360px; margin: 0 auto; }
+  h1 { font-size: var(--fs-xl); line-height: var(--lh-xl); font-weight: 500; letter-spacing: -0.01em; margin: 0 0 var(--space-4); }
+  .intro { font-size: var(--fs-md); color: var(--ink-700); margin-bottom: var(--space-12); max-width: 760px; }
+  .vp-label { display: flex; justify-content: space-between; align-items: baseline; font-size: var(--fs-sm); color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.04em; margin: var(--space-12) 0 var(--space-3); }
+  .vp-label__dim { font-family: var(--font-mono); color: var(--ink-700); }
+  .vp { background: var(--paper); border: 1px solid var(--ink-300); border-radius: var(--radius-md); overflow: hidden; margin: 0 auto; }
+  .vp-xl { max-width: 1280px; }
+  .vp-lg { max-width: 1024px; }
+  .vp-md { max-width: 768px; }
+  .vp-sm { max-width: 375px; }
+
+  /* shared bits */
+  .ico { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .kpi__label { font-size: var(--fs-xs); color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: var(--space-2); }
+  .kpi__value { font-size: var(--fs-xl); line-height: var(--lh-xl); font-weight: 500; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .kpi__delta { font-size: var(--fs-sm); color: var(--moss-600); margin-top: var(--space-1); }
+  .card-tile { background: var(--canvas); border: 1px solid var(--ink-100); border-radius: var(--radius-md); padding: var(--space-4); }
+  .tile__title { font-size: var(--fs-md); font-weight: 500; margin-bottom: var(--space-3); }
+  .tile__row { display: flex; justify-content: space-between; padding: var(--space-2) 0; border-top: 1px solid var(--ink-100); font-size: var(--fs-sm); }
+  .tile__row:first-of-type { border-top: 0; }
+  .pill { display: inline-block; font-size: var(--fs-xs); padding: 1px var(--space-2); border-radius: 999px; font-weight: 500; }
+  .pill--paid { background: var(--moss-200); color: var(--moss-600); }
+  .pill--overdue { background: var(--ochre-200); color: var(--ochre-600); }
+  .pill--draft { background: var(--ink-100); color: var(--ink-500); }
+
+  /* XL / LG: 12-col, 320px nav rail */
+  .dash-desk { display: grid; grid-template-columns: 320px 1fr; min-height: 760px; }
+  .rail { background: var(--canvas); border-right: 1px solid var(--ink-100); padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); }
+  .rail__brand { display: flex; align-items: center; gap: var(--space-3); padding-bottom: var(--space-4); border-bottom: 1px solid var(--ink-100); }
+  .rail__plaque { width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--clay-200); color: var(--terracotta-700); display: grid; place-items: center; font-family: var(--font-serif); font-weight: 600; }
+  .rail__name { font-family: var(--font-serif); font-size: var(--fs-lg); font-weight: 500; }
+  .rail__role { font-size: var(--fs-xs); color: var(--ink-500); }
+  .rail__item { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); color: var(--ink-700); font-size: var(--fs-md); }
+  .rail__item--active { background: var(--ink-100); color: var(--ink-900); font-weight: 500; }
+  .rail__item--active .ico { color: var(--terracotta-600); }
+  .rail__icon { color: var(--ink-500); }
+
+  .main-desk { padding: var(--space-6) var(--space-8); }
+  .topbar { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--space-6); }
+  .topbar__title { font-size: var(--fs-xl); font-weight: 500; letter-spacing: -0.01em; }
+  .topbar__sub { font-size: var(--fs-sm); color: var(--ink-500); margin-top: 2px; }
+
+  .kpis-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-8); padding-bottom: var(--space-6); border-bottom: 1px solid var(--ink-100); margin-bottom: var(--space-6); }
+  .grid-12 { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--space-4); }
+  .col-7 { grid-column: span 7; }
+  .col-5 { grid-column: span 5; }
+
+  /* MD: 56px icon rail, 8-col, KPIs 2×2 */
+  .dash-tab { display: grid; grid-template-columns: 56px 1fr; min-height: 640px; }
+  .rail--icons { background: var(--canvas); border-right: 1px solid var(--ink-100); padding: var(--space-4) 0; display: flex; flex-direction: column; align-items: center; gap: var(--space-4); }
+  .rail__plaque--sm { width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--clay-200); color: var(--terracotta-700); display: grid; place-items: center; font-family: var(--font-serif); font-weight: 600; font-size: var(--fs-sm); }
+  .rail__ico { width: 22px; height: 22px; color: var(--ink-500); }
+  .rail__ico--active { color: var(--terracotta-600); }
+  .main-tab { padding: var(--space-5) var(--space-6); }
+  .kpis-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-4); padding-bottom: var(--space-5); border-bottom: 1px solid var(--ink-100); margin-bottom: var(--space-5); }
+  .grid-8 { display: grid; grid-template-columns: repeat(8, 1fr); gap: var(--space-3); }
+  .col-8 { grid-column: span 8; }
+  .col-4 { grid-column: span 4; }
+
+  /* SM: full-bleed cards, KPIs stacked, bottom tab bar */
+  .dash-mob { padding: var(--space-4); padding-bottom: 76px; min-height: 720px; }
+  .mob-top { padding-bottom: var(--space-4); }
+  .mob-title { font-size: var(--fs-lg); font-weight: 500; letter-spacing: -0.01em; }
+  .mob-sub { font-size: var(--fs-sm); color: var(--ink-500); margin-top: 2px; }
+  .kpis-1 { display: grid; grid-template-columns: 1fr; gap: var(--space-3); padding-bottom: var(--space-4); border-bottom: 1px solid var(--ink-100); margin-bottom: var(--space-4); }
+  .kpi--mob { display: grid; grid-template-columns: 1fr auto; align-items: baseline; padding: var(--space-2) 0; }
+  .kpi--mob .kpi__label { margin-bottom: 0; }
+  .full-bleed { margin: 0 calc(-1 * var(--space-4)); border-radius: 0; border-left: 0; border-right: 0; }
+  .tabbar { height: 56px; background: var(--canvas); border-top: 1px solid var(--ink-100); display: grid; grid-template-columns: repeat(4, 1fr); }
+  .tabbar__item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: var(--fs-xs); color: var(--ink-500); position: relative; }
+  .tabbar__item--active { color: var(--ink-900); }
+  .tabbar__item--active::before { content: ''; position: absolute; top: 0; left: 30%; right: 30%; height: 2px; background: var(--terracotta-600); border-radius: 2px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h4v-6h6v6h4V10"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-horse" viewBox="0 0 24 24"><path d="M5 21V11c0-2 1-4 4-4h6l3-3v6l3 3-3 1v3l-2 4M9 21v-5"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/></symbol>
+    <symbol id="i-money" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-msg" viewBox="0 0 24 24"><path d="M3 5h18v12H8l-5 4z"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></symbol>
+  </defs>
+</svg>
+
+<div class="container">
+  <h1>Owner Dashboard — Viewport Progression (DES-LOCK-2)</h1>
+  <p class="intro">Same dashboard, four viewports. Locks how the owner surface reflows from desktop (xl/lg) to tablet (md) to mobile (sm) per DESIGN.md owner viewport rules.</p>
+
+  <!-- XL ≥1280 -->
+  <div class="vp-label"><span>XL · ≥1280 · 12-col grid · 320 px fixed rail · 24 px gutter</span><span class="vp-label__dim">1280 × 800</span></div>
+  <div class="vp vp-xl"><div class="dash-desk">
+    <aside class="rail">
+      <div class="rail__brand"><div class="rail__plaque">LF</div><div><div class="rail__name">La Fattoria</div><div class="rail__role">Stallleitung · Anna Frei</div></div></div>
+      <div class="rail__item rail__item--active"><svg class="ico rail__icon"><use href="#i-home"/></svg>Übersicht</div>
+      <div class="rail__item"><svg class="ico rail__icon"><use href="#i-cal"/></svg>Kalender</div>
+      <div class="rail__item"><svg class="ico rail__icon"><use href="#i-horse"/></svg>Pferde &amp; Boxen</div>
+      <div class="rail__item"><svg class="ico rail__icon"><use href="#i-users"/></svg>Kunden</div>
+      <div class="rail__item"><svg class="ico rail__icon"><use href="#i-money"/></svg>Rechnungen</div>
+      <div class="rail__item"><svg class="ico rail__icon"><use href="#i-msg"/></svg>Nachrichten</div>
+    </aside>
+    <main class="main-desk">
+      <div class="topbar"><div><div class="topbar__title">Übersicht</div><div class="topbar__sub">Dienstag, 5. Mai 2026 · 7 Termine heute</div></div></div>
+      <section class="kpis-4">
+        <div><div class="kpi__label">Umsatz Mai</div><div class="kpi__value">14'820.50</div><div class="kpi__delta">+ 4.2 %</div></div>
+        <div><div class="kpi__label">Offen</div><div class="kpi__value">2'380.00</div><div class="kpi__delta" style="color: var(--rust-600);">3 überfällig</div></div>
+        <div><div class="kpi__label">Boxen</div><div class="kpi__value">23 / 24</div><div class="kpi__delta" style="color: var(--ink-500);">1 frei 15.05.</div></div>
+        <div><div class="kpi__label">Kunden</div><div class="kpi__value">19</div><div class="kpi__delta">+ 1 Wo</div></div>
+      </section>
+      <div class="grid-12">
+        <section class="card-tile col-7"><div class="tile__title">Heute</div>
+          <div class="tile__row"><span>07:30 · Fütterung Reihe A</span><span style="color: var(--ink-500);">In 12 Min.</span></div>
+          <div class="tile__row"><span>09:00 · Tierarzt — Diva</span><span style="color: var(--ink-500);">Frau Keller</span></div>
+          <div class="tile__row"><span>14:00 · Reitstunde — Lukas</span><span style="color: var(--ink-500);">Rita</span></div>
+          <div class="tile__row"><span>16:30 · Hufschmied (Slot)</span><span style="color: var(--ink-500);">2/4 frei</span></div>
+        </section>
+        <section class="card-tile col-5"><div class="tile__title">Anfragen (3)</div>
+          <div class="tile__row"><span>Marta K. — Transport</span><span style="color: var(--terracotta-600);">Vorschlag</span></div>
+          <div class="tile__row"><span>Lukas Z. — Hufschmied</span><span style="color: var(--terracotta-600);">Buchen</span></div>
+          <div class="tile__row"><span>Stefan R. — Reitstunde</span><span style="color: var(--terracotta-600);">Bestätigen</span></div>
+        </section>
+      </div>
+    </main>
+  </div></div>
+
+  <!-- LG 1024–1279 -->
+  <div class="vp-label"><span>LG · 1024–1279 · Same 12-col + 320 px rail (typical laptop)</span><span class="vp-label__dim">1024 × 768</span></div>
+  <div class="vp vp-lg"><div class="dash-desk">
+    <aside class="rail">
+      <div class="rail__brand"><div class="rail__plaque">LF</div><div><div class="rail__name">La Fattoria</div><div class="rail__role">Anna Frei</div></div></div>
+      <div class="rail__item rail__item--active"><svg class="ico rail__icon"><use href="#i-home"/></svg>Übersicht</div>
+      <div class="rail__item"><svg class="ico rail__icon"><use href="#i-cal"/></svg>Kalender</div>
+      <div class="rail__item"><svg class="ico rail__icon"><use href="#i-horse"/></svg>Pferde</div>
+      <div class="rail__item"><svg class="ico rail__icon"><use href="#i-users"/></svg>Kunden</div>
+      <div class="rail__item"><svg class="ico rail__icon"><use href="#i-money"/></svg>Rechnungen</div>
+    </aside>
+    <main class="main-desk">
+      <div class="topbar"><div><div class="topbar__title">Übersicht</div><div class="topbar__sub">Di 5. Mai · 7 Termine</div></div></div>
+      <section class="kpis-4">
+        <div><div class="kpi__label">Umsatz Mai</div><div class="kpi__value">14'820.50</div></div>
+        <div><div class="kpi__label">Offen</div><div class="kpi__value">2'380.00</div></div>
+        <div><div class="kpi__label">Boxen</div><div class="kpi__value">23 / 24</div></div>
+        <div><div class="kpi__label">Kunden</div><div class="kpi__value">19</div></div>
+      </section>
+      <div class="grid-12">
+        <section class="card-tile col-7"><div class="tile__title">Heute</div>
+          <div class="tile__row"><span>07:30 Fütterung</span><span style="color: var(--ink-500);">12 Min</span></div>
+          <div class="tile__row"><span>09:00 Tierarzt</span><span style="color: var(--ink-500);">Keller</span></div>
+          <div class="tile__row"><span>14:00 Reitstunde</span><span style="color: var(--ink-500);">Rita</span></div>
+        </section>
+        <section class="card-tile col-5"><div class="tile__title">Anfragen (3)</div>
+          <div class="tile__row"><span>Marta K.</span><span class="pill pill--draft">Transport</span></div>
+          <div class="tile__row"><span>Lukas Z.</span><span class="pill pill--draft">Huf</span></div>
+        </section>
+      </div>
+    </main>
+  </div></div>
+
+  <!-- MD 768–1023 -->
+  <div class="vp-label"><span>MD · 768–1023 · Tablet · 56 px icon rail · 8-col · KPIs 2×2</span><span class="vp-label__dim">768 × 1024</span></div>
+  <div class="vp vp-md"><div class="dash-tab">
+    <aside class="rail--icons">
+      <div class="rail__plaque--sm">LF</div>
+      <svg class="ico rail__ico rail__ico--active"><use href="#i-home"/></svg>
+      <svg class="ico rail__ico"><use href="#i-cal"/></svg>
+      <svg class="ico rail__ico"><use href="#i-horse"/></svg>
+      <svg class="ico rail__ico"><use href="#i-users"/></svg>
+      <svg class="ico rail__ico"><use href="#i-money"/></svg>
+      <svg class="ico rail__ico"><use href="#i-msg"/></svg>
+    </aside>
+    <main class="main-tab">
+      <div class="topbar"><div><div class="topbar__title">Übersicht</div><div class="topbar__sub">Di · 7 Termine</div></div></div>
+      <section class="kpis-2">
+        <div><div class="kpi__label">Umsatz Mai</div><div class="kpi__value">14'820.50</div></div>
+        <div><div class="kpi__label">Offen</div><div class="kpi__value">2'380.00</div></div>
+        <div><div class="kpi__label">Boxen</div><div class="kpi__value">23 / 24</div></div>
+        <div><div class="kpi__label">Kunden</div><div class="kpi__value">19</div></div>
+      </section>
+      <div class="grid-8">
+        <section class="card-tile col-8"><div class="tile__title">Heute</div>
+          <div class="tile__row"><span>07:30 Fütterung</span><span style="color: var(--ink-500);">12 Min</span></div>
+          <div class="tile__row"><span>09:00 Tierarzt — Diva</span><span style="color: var(--ink-500);">Keller</span></div>
+          <div class="tile__row"><span>14:00 Reitstunde</span><span style="color: var(--ink-500);">Rita</span></div>
+        </section>
+        <section class="card-tile col-8"><div class="tile__title">Anfragen (3)</div>
+          <div class="tile__row"><span>Marta K. — Transport</span><span class="pill pill--draft">prüfen</span></div>
+          <div class="tile__row"><span>Lukas Z. — Hufschmied</span><span class="pill pill--draft">prüfen</span></div>
+        </section>
+      </div>
+    </main>
+  </div></div>
+
+  <!-- SM 375–767 -->
+  <div class="vp-label"><span>SM · 375–767 · Mobile · Bottom tab bar (Übersicht · Stall · Tagebuch · Mehr) · Full-bleed</span><span class="vp-label__dim">375 × 812</span></div>
+  <div class="vp vp-sm"><div class="dash-mob">
+    <div class="mob-top"><div class="mob-title">Übersicht</div><div class="mob-sub">Di 5.5. · 7 Termine</div></div>
+    <section class="kpis-1">
+      <div class="kpi--mob"><div class="kpi__label">Umsatz Mai</div><div class="kpi__value" style="font-size: var(--fs-lg);">14'820.50</div></div>
+      <div class="kpi--mob"><div class="kpi__label">Offen</div><div class="kpi__value" style="font-size: var(--fs-lg); color: var(--rust-600);">2'380.00</div></div>
+      <div class="kpi--mob"><div class="kpi__label">Boxen</div><div class="kpi__value" style="font-size: var(--fs-lg);">23 / 24</div></div>
+      <div class="kpi--mob"><div class="kpi__label">Kunden</div><div class="kpi__value" style="font-size: var(--fs-lg);">19</div></div>
+    </section>
+    <section class="card-tile full-bleed" style="border-top: 1px solid var(--ink-100);"><div class="tile__title" style="padding: 0 var(--space-4); margin-top: var(--space-3);">Heute</div>
+      <div class="tile__row" style="padding: var(--space-3) var(--space-4);"><span>07:30 Fütterung</span><span style="color: var(--ink-500);">12 Min</span></div>
+      <div class="tile__row" style="padding: var(--space-3) var(--space-4);"><span>09:00 Tierarzt</span><span style="color: var(--ink-500);">Keller</span></div>
+      <div class="tile__row" style="padding: var(--space-3) var(--space-4);"><span>14:00 Reitstunde</span><span style="color: var(--ink-500);">Rita</span></div>
+    </section>
+    <section class="card-tile full-bleed" style="margin-top: var(--space-4); border-top: 1px solid var(--ink-100);"><div class="tile__title" style="padding: 0 var(--space-4); margin-top: var(--space-3);">Anfragen (3)</div>
+      <div class="tile__row" style="padding: var(--space-3) var(--space-4);"><span>Marta K. — Transport</span><span class="pill pill--draft">offen</span></div>
+      <div class="tile__row" style="padding: var(--space-3) var(--space-4);"><span>Lukas Z. — Huf</span><span class="pill pill--draft">offen</span></div>
+    </section>
+    <div class="tabbar">
+      <div class="tabbar__item tabbar__item--active"><svg class="ico"><use href="#i-home"/></svg>Übersicht</div>
+      <div class="tabbar__item"><svg class="ico"><use href="#i-horse"/></svg>Stall</div>
+      <div class="tabbar__item"><svg class="ico"><use href="#i-cal"/></svg>Tagebuch</div>
+      <div class="tabbar__item"><svg class="ico"><use href="#i-more"/></svg>Mehr</div>
+    </div>
+  </div></div>
+
+</div>
+</body>
+</html>

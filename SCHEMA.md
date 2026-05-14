@@ -19,7 +19,7 @@ Canonical reference. Source of truth lives in `packages/db/schema.sql`. This doc
 |---|---|
 | `stables` | Tenant root. UID-MWST, address, default locale (DE/FR/IT), VAT method (effektiv/saldo). |
 | `users` | Supabase Auth users. Mirrored from `auth.users`. |
-| `memberships` | (`user_id`, `stable_id`, `role`). Role enum: `owner`, `manager`, `worker`, `client`. One user can have many memberships. |
+| `memberships` | (`user_id`, `stable_id`, `role`). Role enum: `owner`, `worker`, `client`. One user can have many memberships. (`manager` dropped from V1 per `DECISIONS.md` D13.) |
 | `audit_log` | Append-only mutation log. (`stable_id`, `actor_user_id`, `entity`, `entity_id`, `action`, `before_jsonb`, `after_jsonb`, `at`). |
 
 ## People and horses

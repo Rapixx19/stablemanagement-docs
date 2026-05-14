@@ -15,7 +15,7 @@ Infra and trust setup that has long lead times. Cheaper to do once now than to c
 - [ ] **Supabase Pro project** in Frankfurt provisioned, daily backup verified, PITR window = 7 days enabled
 - [ ] **Connection Pooler** enabled, transaction-mode connection string captured for app traffic, direct connection captured for migrations + pg_cron
 - [ ] **`statement_timeout = 30s`** set on the role used by app traffic; default kept on direct/migration role
-- [ ] **`pg_cron`, `pgcrypto`, `vault`** extensions enabled in Supabase
+- [ ] **`pg_cron`, `pgcrypto`, `vault`, `vector`** extensions enabled in Supabase (`vector` is required by slice 01b for Reducto embeddings per `domains/document-search.md`)
 - [ ] **Supabase Vault** seeded with `bexio_token_encryption_key` mirror of the Vercel env var
 - [ ] **GitHub Actions runners** authorized; required-status-checks set on `main` (lint, typecheck, unit, integration, RLS, migration grep, schema-dump-diff, e2e stub)
 - [ ] **`gitleaks`** pre-commit hook installed locally + in CI
@@ -36,6 +36,35 @@ Infra and trust setup that has long lead times. Cheaper to do once now than to c
 - [ ] **Walter intro list** drafted: 5–10 candidate boarding stables for design-partner outreach via Walter
 - [ ] **La Fattoria pilot agreement** drafted (free V1 access in exchange for weekly feedback, named in marketing once they consent)
 - [ ] **Privacy notice** for nFADP — DE/FR/IT — covers what we collect, where it lives (Frankfurt), how to delete
+
+## Pre-slice-00 API-key provisioning (Ferdinand owns, 5-day sprint)
+
+Locked 2026-05-14 in `/plan-ceo-review` HOLD SCOPE session. Slice 00 PR blocks if these aren't done.
+
+- [ ] **Reducto API** — sign up, get API key, **review and sign DPA** (EU residency + no model-training-on-customer-data). Store in `REDUCTO_API_KEY` Vercel env. Refs `domains/document-search.md` + `domains/document-ingestion.md`.
+- [ ] **OpenAI** — org account + `text-embedding-3-small` API key. Store in `OPENAI_EMBEDDING_API_KEY`. Refs `domains/document-search.md`.
+- [ ] **Anthropic** — API key for Claude Sonnet 4.6 (slice 05 catalog AI) + Haiku 4.5 (slice 01b document triage). Store in `ANTHROPIC_API_KEY`. Refs `domains/ai-extraction.md` + `domains/document-ingestion.md`.
+- [ ] **Resend** — sender domain verified, inbound MX records on `inbox.stableplatform.ch` pointing at Resend inbound, webhook secret. Store as `RESEND_API_KEY` + `RESEND_INBOUND_WEBHOOK_SECRET`. Refs slice 00 D6 + slice 10 + `domains/document-ingestion.md`.
+- [ ] **Bexio** — developer account + sandbox + OAuth app registration. Production credentials gated until La Fattoria onboards. Refs slice 09.
+
+## CEO review follow-ups (2026-05-14)
+
+From `/plan-ceo-review` HOLD SCOPE session.
+
+- [x] **Slice 01 split** into 01a (people + horses + photos + profile UI, 5 dev-days) and 01b (unified documents + 5-path ingestion + Reducto + email_aliases + content search, 9 dev-days). Done 2026-05-14 in `/plan-ceo-review` session; README phase table updated; D17 logged in `DECISIONS.md`.
+- [ ] EXPLAIN ANALYZE on polymorphic `documents` cross-tenant client-restricted SELECT pre-slice-01b merge. Polymorphic refs are a known query-plan footgun.
+- [ ] Cross-language search recall test in `domains/document-search.md`: 50 fixture pairs (DE query / FR doc, IT / DE, EN / IT), assert top-5 recall > 80%.
+- [ ] `BexioBookkeepingDataInconsistent` rescue path in slice 09 (Bexio reports paid but amount doesn't match ours = partial payment).
+- [ ] Haiku triage disambiguation logic in `domains/document-ingestion.md`: when LLM proposes an entity_name that matches multiple records in the stable inventory, drop confidence to 0.5 and force owner pick.
+- [ ] SLO for document ingestion latency (< 5 min p95 from upload to embedding populated) in `domains/metrics.md`.
+- [ ] Daily AI cost summary email in `runbooks/oncall.md` — top-5 stables by Reducto + OpenAI + Anthropic spend yesterday.
+- [ ] Caching strategy for owner-ops calendar arrival overlay (slice 15 #9) — N×M correlation under load needs precomputed view or short-TTL cache.
+- [ ] Empty-state copy for `/client/services` when owner has toggled all `bookable_by_client` off (slice 11 / D16).
+- [ ] `⌘K` global keyboard shortcut + slash-command spec for the owner search modal (slice 00 + `domains/document-search.md`).
+- [ ] `packages/ui/README.md` primitive registry — discovery doc for the design system (sparkline SVG variants + photo-grid item are new additions from dashboard refresh, not in `DESIGN.md` yet).
+- [ ] Rescue-path coverage lint promoted from slice 09 to a CI lint that scans every domain rescue table and asserts a paired unit test exists.
+- [ ] EN translation of the 12 older DE-only mockups (newer ones already EN per session sweep). Naming: `mockups/*.html` → translation pass.
+- [ ] `WebShareTargetUnsupportedOniOS` rescue path — fall back to "Tap Mehr → Dokument scannen" inline hint on iOS until iOS Safari ships share-target support.
 
 ## Per-slice spec follow-ups
 
@@ -117,7 +146,6 @@ Don't promise these. Only revisit if a real customer signal lands.
 - [ ] ML layer — predictive task ordering, dropped-customer prediction, etc. Decision gate: does an actual stable owner ask for it twice unprompted? If yes, then evaluate Python service / Edge Function / Supabase + pgvector
 - [ ] Sentavita biometrics integration (horse health monitoring)
 - [ ] TAMV journal (vet record formal export)
-- [ ] Inventory module (feed bag tracking, etc.)
 - [ ] Reporting / BI dashboard
 - [ ] Identitas API (CH horse-passport authority)
 - [ ] Abacus integration (for stables > 50 horses)
@@ -129,6 +157,15 @@ Don't promise these. Only revisit if a real customer signal lands.
 - [ ] GPS-verified task completion
 - [ ] Voice-note task completion with STT
 - [ ] Biometric login on worker app
+
+## CEO + Eng + Design reviews 2026-05-07
+
+Three reviews ran against the locked V1 plan today. Three review docs:
+- `reviews/2026-05-07-ceo-review.md` — scope, premise, security/UX, slice-level spec gaps. 4 decisions: discriminated-union server-action contract; 30/90/15s Realtime; nFADP redact-PII-keep-row; slice 13 V1 IndexedDB offline queue.
+- `reviews/2026-05-07-eng-review.md` — framework gotchas (cacheTag tenant scope, Fluid Compute module-state, cron poll body race, deep-join policy cost, SW unregister, JWT refresh), idempotency patterns, optimistic-lock convention, audit-log trigger, zod input validation, dashboard fan-out parallelization, partial index, query-count budget. 1 decision: cacheTag stable scope + CI invariant test.
+- `reviews/2026-05-07-design-review.md` — 7-pass design audit. Initial 8/10 → 9/10 after fixes. 2 decisions locked: slice 08 invoice draft = two-pane collapsible-preview; **owner now renders all viewports (sm/md/lg/xl)** — V1 scope addition that affects 11 slices touching owner UI. Sweep: per-slice info hierarchy + per-feature state matrix DE/FR/IT + ConfirmDialog/DataTable/PreviewPane primitives + 3 user-journey storyboards + DE-canonical copy library + 4 new HTML mockups in existing style.
+
+Combined: **17 critical silent-failure gaps** (12 CEO + 5 eng) + **owner-mobile scope expansion** (Design). Sweep into the lists above when starting each slice. Review docs supersede nothing — items above are still authoritative; this is the diff layer.
 
 ## Sweep policy
 

@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<title>Owner Ops Calendar — /owner/ops</title>
+<meta name="viewport" content="width=1280, initial-scale=1">
+<link rel="stylesheet" href="_tokens.css">
+<style>
+  body { background: var(--paper); margin: 0; font-family: var(--font-sans); color: var(--ink-900); }
+  .app { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; }
+  .rail { background: var(--canvas); border-right: 1px solid var(--ink-100); padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); }
+  .rail__brand { display: flex; align-items: center; gap: var(--space-3); padding-bottom: var(--space-4); border-bottom: 1px solid var(--ink-100); }
+  .rail__plaque { width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--clay-200); color: var(--terracotta-700); display: grid; place-items: center; font-family: var(--font-serif); font-weight: 600; }
+  .rail__name { font-family: var(--font-serif); font-size: var(--fs-lg); font-weight: 500; }
+  .rail__role { font-size: var(--fs-xs); color: var(--ink-500); }
+  .rail__item { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); color: var(--ink-700); font-size: var(--fs-md); cursor: default; }
+  .rail__item--active { background: var(--ink-100); color: var(--ink-900); font-weight: 500; }
+  .rail__item--active .ico { color: var(--terracotta-600); }
+  .rail__icon { color: var(--ink-500); }
+  .ico { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+  .main { padding: var(--space-6) var(--space-8); max-width: 1280px; }
+  .topbar { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--space-4); }
+  .topbar__title { font-size: var(--fs-xl); font-weight: 500; letter-spacing: -0.01em; }
+  .topbar__sub { font-size: var(--fs-sm); color: var(--ink-500); margin-top: 2px; }
+  .topbar__chips { display: flex; gap: var(--space-2); }
+  .chip { padding: var(--space-1) var(--space-3); border: 1px solid var(--ink-300); border-radius: 999px; font-size: var(--fs-sm); color: var(--ink-700); cursor: default; }
+  .chip--active { background: var(--ink-900); color: var(--canvas); border-color: var(--ink-900); }
+
+  .banner { background: var(--ink-100); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); margin-bottom: var(--space-4); font-size: var(--fs-sm); color: var(--ink-700); display: flex; gap: var(--space-3); align-items: center; }
+  .banner__lock { color: var(--ink-500); font-family: var(--font-mono); font-size: var(--fs-xs); }
+
+  /* The grid */
+  .ops { background: var(--canvas); border: 1px solid var(--ink-100); border-radius: var(--radius-md); overflow: hidden; }
+  .ops__head { display: grid; grid-template-columns: 180px repeat(7, 1fr); background: var(--paper); border-bottom: 1px solid var(--ink-100); }
+  .ops__head-cell { padding: var(--space-3); font-size: var(--fs-xs); color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.04em; border-right: 1px solid var(--ink-100); }
+  .ops__head-cell--today { background: var(--clay-200); color: var(--terracotta-700); }
+  .ops__head-cell:last-child { border-right: 0; }
+
+  .ops__row { display: grid; grid-template-columns: 180px repeat(7, 1fr); border-bottom: 1px solid var(--ink-100); min-height: 92px; }
+  .ops__row:last-child { border-bottom: 0; }
+  .ops__row-label { padding: var(--space-3); border-right: 1px solid var(--ink-100); background: var(--paper); display: flex; flex-direction: column; gap: 4px; justify-content: center; }
+  .ops__row-name { font-size: var(--fs-md); font-weight: 500; }
+  .ops__row-meta { font-size: var(--fs-xs); color: var(--ink-500); }
+  .ops__cell { border-right: 1px solid var(--ink-100); padding: var(--space-2); position: relative; display: flex; flex-direction: column; gap: 4px; }
+  .ops__cell:last-child { border-right: 0; }
+
+  /* Shift bars */
+  .shift { padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); font-size: var(--fs-xs); display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+  .shift--scheduled { background: var(--ink-100); color: var(--ink-700); }
+  .shift--clockedin { background: var(--moss-200); color: var(--moss-600); }
+  .shift--completed { background: var(--ink-100); color: var(--ink-500); text-decoration: line-through; }
+  .shift--sick { border: 1px solid var(--rust-600); background: transparent; color: var(--rust-600); border-style: dashed; }
+  .shift--late { background: var(--ochre-200); color: var(--ochre-600); }
+
+  .task-pill { font-size: var(--fs-xs); padding: 1px var(--space-2); background: var(--clay-200); color: var(--terracotta-700); border-radius: var(--radius-sm); font-family: var(--font-mono); cursor: grab; }
+
+  .ops__cell--gap { background: var(--ochre-200); }
+  .ops__cell--gap-label { font-size: var(--fs-xs); color: var(--ochre-600); padding: var(--space-1) 0; font-weight: 500; }
+
+  /* Owner row */
+  .ops__row--owner { background: var(--clay-200); }
+  .ops__row--owner .ops__row-label { background: var(--clay-200); border-right-color: var(--ink-300); }
+  .ops__row--owner .ops__row-name { color: var(--terracotta-700); }
+  .ops__row--owner .ops__cell { background: var(--clay-200); }
+  .priv-pill { font-size: var(--fs-xs); padding: 1px var(--space-2); border: 1px dashed var(--ink-500); border-radius: var(--radius-sm); color: var(--ink-700); }
+
+  .legend { display: flex; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-4); font-size: var(--fs-xs); color: var(--ink-500); }
+  .legend__sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: var(--space-2); vertical-align: 1px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h4v-6h6v6h4V10"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-ops" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="1"/><rect x="3" y="14" width="18" height="6" rx="1"/><path d="M7 7h4M7 17h4"/></symbol>
+    <symbol id="i-horse" viewBox="0 0 24 24"><path d="M5 21V11c0-2 1-4 4-4h6l3-3v6l3 3-3 1v3l-2 4M9 21v-5"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/></symbol>
+    <symbol id="i-task" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></symbol>
+    <symbol id="i-money" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <aside class="rail" aria-label="Hauptnavigation">
+    <div class="rail__brand"><div class="rail__plaque">LF</div><div><div class="rail__name">La Fattoria</div><div class="rail__role">Stallleitung · Anna Frei</div></div></div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-home"/></svg>Übersicht</div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-cal"/></svg>Kalender</div>
+    <div class="rail__item rail__item--active"><svg class="ico rail__icon"><use href="#i-ops"/></svg>Ops-Kalender</div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-horse"/></svg>Pferde &amp; Boxen</div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-users"/></svg>Kunden</div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-task"/></svg>Aufgaben</div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-money"/></svg>Rechnungen</div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar__title">Ops-Kalender</div>
+        <div class="topbar__sub">5. – 11. Mai 2026 · 4 Mitarbeiter · 1 Deckungslücke</div>
+      </div>
+      <div class="topbar__chips">
+        <span class="chip chip--active">Diese Woche</span>
+        <span class="chip">Nächste Woche</span>
+        <span class="chip">Monat</span>
+      </div>
+    </div>
+
+    <div class="banner">
+      <span>Nur intern sichtbar. Kunden sehen diesen Kalender nicht.</span>
+      <span class="banner__lock">/owner/ops · slice 15 #9</span>
+    </div>
+
+    <div class="ops" role="grid" aria-label="Wochenplan">
+      <div class="ops__head" role="row">
+        <div class="ops__head-cell">Person</div>
+        <div class="ops__head-cell ops__head-cell--today">Di 5</div>
+        <div class="ops__head-cell">Mi 6</div>
+        <div class="ops__head-cell">Do 7</div>
+        <div class="ops__head-cell">Fr 8</div>
+        <div class="ops__head-cell">Sa 9</div>
+        <div class="ops__head-cell">So 10</div>
+        <div class="ops__head-cell">Mo 11</div>
+      </div>
+
+      <!-- Owner row -->
+      <div class="ops__row ops__row--owner">
+        <div class="ops__row-label"><div class="ops__row-name">Anna Frei</div><div class="ops__row-meta">Eigentümerin · selbstzugewiesen</div></div>
+        <div class="ops__cell"><span class="task-pill">Bexio prüfen · 09:00</span><span class="priv-pill">Privat: Steuerberater</span></div>
+        <div class="ops__cell"><span class="task-pill">Heulieferung empfangen</span></div>
+        <div class="ops__cell"></div>
+        <div class="ops__cell"><span class="task-pill">Mai-Rechnungen versenden</span></div>
+        <div class="ops__cell"></div>
+        <div class="ops__cell"><span class="priv-pill">Privat: Hochzeit</span></div>
+        <div class="ops__cell"></div>
+      </div>
+
+      <!-- Marco -->
+      <div class="ops__row">
+        <div class="ops__row-label"><div class="ops__row-name">Marco Bianchi</div><div class="ops__row-meta">Stallarbeiter · 100 %</div></div>
+        <div class="ops__cell">
+          <span class="shift shift--clockedin">07:00 – 12:00 · ●vor Ort</span>
+          <span class="task-pill">Fütterung A</span>
+          <span class="task-pill">Misten A</span>
+        </div>
+        <div class="ops__cell">
+          <span class="shift shift--scheduled">07:00 – 12:00</span>
+          <span class="task-pill">Fütterung A</span>
+        </div>
+        <div class="ops__cell">
+          <span class="shift shift--scheduled">07:00 – 12:00</span>
+          <span class="task-pill">Fütterung A</span>
+        </div>
+        <div class="ops__cell">
+          <span class="shift shift--late">07:13 – 12:00 · 13 Min spät</span>
+        </div>
+        <div class="ops__cell"></div>
+        <div class="ops__cell"></div>
+        <div class="ops__cell">
+          <span class="shift shift--scheduled">07:00 – 12:00</span>
+        </div>
+      </div>
+
+      <!-- Sara -->
+      <div class="ops__row">
+        <div class="ops__row-label"><div class="ops__row-name">Sara Müller</div><div class="ops__row-meta">Stallarbeiterin · 80 %</div></div>
+        <div class="ops__cell">
+          <span class="shift shift--completed">06:00 – 10:00 · erledigt</span>
+        </div>
+        <div class="ops__cell">
+          <span class="shift shift--sick">Krank</span>
+        </div>
+        <div class="ops__cell">
+          <span class="shift shift--scheduled">06:00 – 10:00</span>
+          <span class="task-pill">Misten B</span>
+        </div>
+        <div class="ops__cell"></div>
+        <div class="ops__cell">
+          <span class="shift shift--scheduled">06:00 – 10:00</span>
+          <span class="task-pill">Misten B</span>
+        </div>
+        <div class="ops__cell">
+          <span class="shift shift--scheduled">06:00 – 10:00</span>
+        </div>
+        <div class="ops__cell"></div>
+      </div>
+
+      <!-- Lorenzo -->
+      <div class="ops__row">
+        <div class="ops__row-label"><div class="ops__row-name">Lorenzo Rossi</div><div class="ops__row-meta">Bereiter · Aushilfe</div></div>
+        <div class="ops__cell">
+          <span class="shift shift--scheduled">14:00 – 18:00</span>
+          <span class="task-pill">Beritt Akira</span>
+        </div>
+        <div class="ops__cell"></div>
+        <div class="ops__cell">
+          <span class="shift shift--scheduled">14:00 – 18:00</span>
+        </div>
+        <div class="ops__cell"></div>
+        <div class="ops__cell">
+          <span class="shift shift--scheduled">10:00 – 14:00</span>
+        </div>
+        <div class="ops__cell"></div>
+        <div class="ops__cell"></div>
+      </div>
+
+      <!-- Coverage gap row -->
+      <div class="ops__row">
+        <div class="ops__row-label"><div class="ops__row-name">Deckung</div><div class="ops__row-meta">Sollabdeckung 07–18 Uhr</div></div>
+        <div class="ops__cell"></div>
+        <div class="ops__cell ops__cell--gap"><div class="ops__cell--gap-label">⚠ Keine Abdeckung 10–14</div></div>
+        <div class="ops__cell"></div>
+        <div class="ops__cell ops__cell--gap"><div class="ops__cell--gap-label">⚠ Keine Abdeckung 12–18</div></div>
+        <div class="ops__cell"></div>
+        <div class="ops__cell"></div>
+        <div class="ops__cell"></div>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span><span class="legend__sw" style="background: var(--ink-100);"></span>Geplant</span>
+      <span><span class="legend__sw" style="background: var(--moss-200);"></span>Eingestempelt · vor Ort</span>
+      <span><span class="legend__sw" style="background: var(--ochre-200);"></span>Verspätung &gt; 10 Min</span>
+      <span><span class="legend__sw" style="background: transparent; border: 1px dashed var(--rust-600);"></span>Krank / abwesend</span>
+      <span><span class="legend__sw" style="background: var(--ochre-200);"></span>Deckungslücke</span>
+      <span style="margin-left: auto;">Drag &amp; Drop: Aufgaben zwischen Reihen verschieben</span>
+    </div>
+  </main>
+</div>
+</body>
+</html>

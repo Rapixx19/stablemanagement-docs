@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<title>Neuer Termin mit Anmeldung — /owner/schedule/new</title>
+<meta name="viewport" content="width=1280, initial-scale=1">
+<link rel="stylesheet" href="_tokens.css">
+<style>
+  body { background: var(--ink-overlay); margin: 0; font-family: var(--font-sans); color: var(--ink-900); min-height: 100vh; display: grid; place-items: center; padding: var(--space-8); }
+  .modal { background: var(--canvas); border-radius: var(--radius-lg); box-shadow: 0 20px 48px -16px rgba(27,24,20,0.32); max-width: 720px; width: 100%; overflow: hidden; }
+  .modal__head { padding: var(--space-6) var(--space-8); border-bottom: 1px solid var(--ink-100); display: flex; justify-content: space-between; align-items: baseline; }
+  .modal__title { font-size: var(--fs-lg); font-weight: 500; }
+  .modal__close { color: var(--ink-500); cursor: default; font-size: var(--fs-md); }
+  .modal__body { padding: var(--space-6) var(--space-8); display: flex; flex-direction: column; gap: var(--space-5); }
+  .modal__foot { padding: var(--space-4) var(--space-8); border-top: 1px solid var(--ink-100); display: flex; justify-content: space-between; align-items: center; background: var(--paper); }
+
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+  .row--3 { grid-template-columns: 1fr 1fr 1fr; }
+  .row--full { grid-template-columns: 1fr; }
+  .field__label { font-size: var(--fs-xs); color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: var(--space-2); display: block; }
+  .field__ctrl { padding: var(--space-3); border: 1px solid var(--ink-300); border-radius: var(--radius-sm); font-size: var(--fs-md); width: 100%; box-sizing: border-box; background: var(--canvas); color: var(--ink-900); font-family: inherit; }
+  .field__hint { font-size: var(--fs-xs); color: var(--ink-500); margin-top: var(--space-1); }
+  .seg { display: flex; gap: 0; border: 1px solid var(--ink-300); border-radius: var(--radius-sm); padding: 2px; }
+  .seg__item { flex: 1; padding: var(--space-2); text-align: center; font-size: var(--fs-sm); color: var(--ink-700); border-radius: 4px; cursor: default; }
+  .seg__item--active { background: var(--ink-900); color: var(--canvas); }
+
+  /* Signup section */
+  .signup-section { border: 1px solid var(--terracotta-600); border-radius: var(--radius-md); padding: var(--space-5); background: var(--paper); }
+  .signup-section--off { border-color: var(--ink-300); background: var(--canvas); }
+  .signup-section__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-4); }
+  .signup-section__title { font-size: var(--fs-md); font-weight: 500; display: flex; align-items: center; gap: var(--space-3); }
+  .signup-section__title svg { color: var(--terracotta-600); }
+  .toggle { width: 44px; height: 24px; background: var(--terracotta-600); border-radius: 999px; position: relative; cursor: default; }
+  .toggle::after { content: ''; position: absolute; right: 2px; top: 2px; width: 20px; height: 20px; background: var(--canvas); border-radius: 50%; }
+  .toggle--off { background: var(--ink-300); }
+  .toggle--off::after { left: 2px; right: auto; }
+  .signup-section__body { display: flex; flex-direction: column; gap: var(--space-4); }
+  .signup-section--off .signup-section__body { display: none; }
+
+  .lock-notice { font-size: var(--fs-xs); color: var(--moss-600); background: var(--moss-200); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); margin-top: var(--space-2); display: flex; align-items: center; gap: var(--space-2); }
+  .ico { width: 16px; height: 16px; stroke: currentColor; stroke-width: 1.5; fill: none; }
+
+  .vis-info { font-size: var(--fs-sm); color: var(--ink-500); padding: var(--space-3); background: var(--canvas); border-radius: var(--radius-sm); border: 1px dashed var(--ink-300); }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15 20c0-2 2-3.5 4-3.5s2 .5 2 .5"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M12 16h.01"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-11"/></symbol>
+  </defs>
+</svg>
+
+<div class="modal" role="dialog" aria-label="Neuer Termin">
+  <div class="modal__head">
+    <div>
+      <div class="modal__title">Neuer Termin</div>
+      <div style="font-size: var(--fs-sm); color: var(--ink-500); margin-top: 2px;">Mit Anmeldung für Kunden</div>
+    </div>
+    <div class="modal__close">Esc</div>
+  </div>
+
+  <div class="modal__body">
+
+    <div class="row row--full">
+      <div>
+        <label class="field__label">Art</label>
+        <div class="seg" role="tablist">
+          <div class="seg__item">Reitstunde</div>
+          <div class="seg__item">Training</div>
+          <div class="seg__item seg__item--active">Kurs / Clinic</div>
+          <div class="seg__item">Turnier</div>
+          <div class="seg__item">Sozial</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row row--full">
+      <div>
+        <label class="field__label">Titel</label>
+        <input class="field__ctrl" value="Springkurs Avenches — Frühling 2026"/>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label class="field__label">Beginn</label>
+        <input class="field__ctrl" value="15.06.2026 · 09:00"/>
+      </div>
+      <div>
+        <label class="field__label">Ende</label>
+        <input class="field__ctrl" value="16.06.2026 · 17:00"/>
+      </div>
+    </div>
+
+    <div class="row row--full">
+      <div>
+        <label class="field__label">Ort</label>
+        <input class="field__ctrl" value="Halle B + Springplatz Aussen"/>
+      </div>
+    </div>
+
+    <!-- Signup section, toggled ON -->
+    <div class="signup-section">
+      <div class="signup-section__head">
+        <div class="signup-section__title">
+          <svg class="ico"><use href="#i-users"/></svg>
+          Anmeldung aktivieren
+        </div>
+        <div class="toggle" role="switch" aria-checked="true" aria-label="Anmeldung aktiv"></div>
+      </div>
+
+      <div class="signup-section__body">
+        <div class="row">
+          <div>
+            <label class="field__label">Leistung aus Katalog</label>
+            <select class="field__ctrl">
+              <option>Springkurs 2 Tage · CHF 380.00</option>
+              <option>Springkurs 1 Tag · CHF 220.00</option>
+            </select>
+            <div class="field__hint">Verknüpft die Anmeldung mit einer abrechenbaren Leistung.</div>
+          </div>
+          <div>
+            <label class="field__label">Plätze</label>
+            <input class="field__ctrl" value="8" type="number" min="1"/>
+            <div class="field__hint">1 = exklusiv · N = Gruppe</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label class="field__label">Anmeldeschluss</label>
+            <input class="field__ctrl" value="13.06.2026 · 09:00"/>
+            <div class="field__hint">Standard: 24 h vor Beginn. Danach kein Beitritt mehr möglich.</div>
+          </div>
+          <div>
+            <label class="field__label">Sichtbarkeit</label>
+            <select class="field__ctrl" disabled style="color: var(--ink-700);">
+              <option>Öffentlich für Kunden (empfohlen)</option>
+            </select>
+            <div class="lock-notice">
+              <svg class="ico"><use href="#i-info"/></svg>
+              Anmeldung aktiv → Sichtbarkeit muss öffentlich sein. Privat ist nicht möglich.
+            </div>
+          </div>
+        </div>
+
+        <div class="vis-info">
+          <strong>Was Kunden sehen:</strong> Der Termin erscheint im Kalender mit grünem gestricheltem Rahmen. Kunden tippen auf „Anmelden", wählen ihr Pferd und schicken eine Anfrage. Du bestätigst manuell. Bei Bestätigung wird das Pferd dem Termin zugeordnet — kein doppelter Eintrag.
+        </div>
+      </div>
+    </div>
+
+    <div class="row row--full">
+      <div>
+        <label class="field__label">Notiz (intern)</label>
+        <textarea class="field__ctrl" rows="2" placeholder="Optionale Notizen für interne Planung. Kunden sehen das nicht.">Anhänger vorbereiten Fr Vormittag. Heu für 8 Pferde.</textarea>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="modal__foot">
+    <div style="font-size: var(--fs-sm); color: var(--ink-500); display: flex; align-items: center; gap: var(--space-2);">
+      <svg class="ico" style="color: var(--moss-600);"><use href="#i-check"/></svg>
+      Wird in einer Transaktion gespeichert: Termin + Anmeldeslot
+    </div>
+    <div style="display: flex; gap: var(--space-3);">
+      <button class="btn btn--ghost">Abbrechen</button>
+      <button class="btn btn--primary">Speichern + veröffentlichen</button>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

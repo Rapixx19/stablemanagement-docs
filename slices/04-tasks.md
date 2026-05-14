@@ -15,7 +15,8 @@ Owner defines a recurring set of daily tasks. Each day, the system materialises 
 1. **Task templates** at `/tasks/templates`. Create reusable tasks: title, description, recurrence (daily / weekly / specific days of week / once), default time of day, estimated duration. Examples: "Morning feed Aisle A — 07:00, daily, 30 min."
 2. **Today's tasks** view at `/tasks`. List of all tasks materialised for today, with status (pending / in-progress / done / skipped). Click to mark done. Note required for skip.
 3. **Tasks dashboard tile** (used in slice 16). Compact status: "4 of 6 done."
-4. **Assignment**: V1 owner can optionally assign a task to a worker user. If unassigned, "anyone available." Slice 13 surfaces assigned-to-me tasks on worker home.
+4. **Assignment**: owner can assign a task to a worker user, to **themselves** (or another owner), or leave unassigned ("anyone available"). When assigned to an owner, the task appears on the owner's dashboard tile "Meine Aufgaben heute" (slice 16) and at `/owner/tasks/mine`. Slice 13 surfaces worker-assigned tasks on the worker home. RLS already permits — `assigned_to_user_id` references `auth.users` with no role constraint.
+5. **Owner's own task list** at `/owner/tasks/mine`. Same `DataTable` primitive as the owner main task view, in owner density per `DESIGN.md`. Filters: today / this week / overdue. Inline complete + edit. Excluded from the worker mobile bundle.
 
 ## Schema diff
 
@@ -67,10 +68,15 @@ Crash safety: the cron handler is fully idempotent on `(template_id, due_date, d
 
 ## RLS
 
-- `task_templates`, `tasks`: scoped by `stable_id`
-- Workers can SELECT tasks where `assigned_to_user_id = auth.uid()` or unassigned in their stable
-- Workers can UPDATE tasks (status only) where assigned to them or unassigned
-- Owner/manager: full access
+Both tables scoped by `stable_id` per `domains/rls.md`.
+
+- `task_templates`: `owner` full access. `worker`: SELECT only (worker home renders template title + time-of-day). `client`: **no access**.
+- `tasks`:
+  - `owner`: full access.
+  - `worker`: SELECT where `assigned_to_user_id = auth.uid()` OR `assigned_to_user_id IS NULL`. UPDATE allowed only when (a) row is assigned to the worker or unassigned AND (b) the only changed columns are `status`, `completed_by_user_id`, `completed_at`, `skip_reason`, `version`. **INSERT denied, DELETE denied.**
+  - `client`: **no access**.
+
+**Column-level UPDATE constraint** — Postgres RLS doesn't enforce columns. Two-layer guard: (1) `BEFORE UPDATE` trigger on `tasks` raises when a `worker`-role session changes any column outside the whitelist; (2) server-action zod schema validates the input shape to the same whitelist. Defense in depth.
 
 ## Acceptance criteria
 
@@ -83,6 +89,10 @@ Crash safety: the cron handler is fully idempotent on `(template_id, due_date, d
 - [ ] **Schedule drift test**: Vercel Cron schedule pinned to `0 3 * * *` Europe/Zurich in `vercel.ts`; CI verifies the cron config still matches via a snapshot test
 - [ ] Worker (slice 13) sees their assigned tasks for today
 - [ ] Mobile view: thumb-tap-friendly check circles (44px min)
+- [ ] **Worker INSERT on `tasks` denied** by RLS — no row written, error returned
+- [ ] **Worker UPDATE on `title`** denied by trigger even when the row is in the worker's scope (whitelist enforcement)
+- [ ] **Worker INSERT on `task_templates` denied** by RLS
+- [ ] **Client SELECT on `tasks` denied** by RLS (operational data, no client surface)
 
 ## Acceptance integration test
 

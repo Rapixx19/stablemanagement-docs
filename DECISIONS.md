@@ -62,6 +62,40 @@ Workers must have an email to receive a magic link. Workers without email cannot
 
 Every `/api/cron/*` route handler verifies `Authorization: Bearer ${process.env.CRON_SECRET}` on first line. Rejects with 401 otherwise. Vercel Cron config sends the header automatically. Same secret works for all crons; rotate via the standard rotation procedure in `runbooks/`.
 
+## D13. Membership role enum — drop `manager` from V1
+
+`memberships.role` enum is `'owner' | 'worker' | 'client'` in V1. **No `manager`.** Pilot is one stable with one owner; no slice has manager-specific permissions distinct from owner; every previously-written `owner/manager` clause collapses cleanly to `owner`. Adding the role back is a one-line migration if multi-stable chain ops or stable delegates emerge in V1.1+ — dropping a role later is destructive, so we start narrow. All slice RLS sections, `domains/rls.md`, `domains/auth.md`, and `SCHEMA.md` swept on 2026-05-13.
+
+## D14. Document storage — unified `documents` table + Reducto search
+
+V1 ships a single `documents` table polymorphic over `(entity_kind, entity_id)` for horses, clients, and the stable itself, replacing the original `horse_documents` table. All uploaded PDFs flow through Reducto for layout-aware extraction + embedding into pgvector, indexed for natural-language search per `domains/document-search.md`. Customer-uploaded horse photos are allowed in three defined contexts per `DESIGN.md` (logo / horse profile / dashboard "active horses" strip) — no other imagery permitted. Slice 01 schema diff updated; slice 16 onboarding gets a Reducto consent screen.
+
+## D15. Document ingestion — five paths, one review queue
+
+V1 ships **five automated ingestion paths** for documents (per `domains/document-ingestion.md`): per-stable email catch-all (`documents.{stable}@inbox.stableplatform.ch`) with Reducto+Haiku triage; per-entity email aliases (owner-generated, vendor-bound) that skip triage; PWA Web Share Target manifest entry; mobile camera capture via `<input capture="environment">`; bulk historical import as an onboarding step (slice 16). All five land in a single review queue at `/owner/inbox/documents` for one-tap confirm. Costs capped at $5/mo Resend inbound + $5/mo Haiku triage + shared $50/mo Reducto per stable. La Fattoria pilot adoption depends on this — manual upload alone leaves the document vault empty. Adds ~5 dev-days to V1; pilot timeline still ≤ 19 weeks.
+
+## D16. Client-bookable services — opt-in per service
+
+V1 ships a discovery-surface catalog at `/client/services` (slice 11 #11) listing only the services where the owner has explicitly set `services.bookable_by_client = true`. Default is **off** so owners don't accidentally expose internal services like "Notfall-Tierarzt" or "Foaling-Begleitung" to client self-booking. Per-service controls (slice 05 #6): `client_facing_name`, `client_description`, `min_notice_hours`, `max_advance_days`, `default_provider_person_id`. Existing slot mechanism (slice 11 `availability_slots`) is reused — the catalog page is pure UX over the same booking primitive. Client booking through the catalog flows through the same hold-on-request transaction, owner inbox, and confirmation as calendar-driven booking.
+
+## D17. Slice 01 split into 01a + 01b
+
+Slice 01 grew from the May 7 estimate of 5 dev-days to a realistic 12–15 dev-days after D14 (unified documents + Reducto) and D15 (5-path ingestion). Per `/plan-ceo-review` HOLD SCOPE session 2026-05-14, split into two slices:
+
+- **Slice 01a — People and Horses** (5 dev-days): people, horses, horse_photos tables. Owner + client profile UI without Documents tab. The original May 7 scope.
+- **Slice 01b — Documents, Ingestion, Search** (9 dev-days): unified polymorphic `documents` table + `email_aliases` table. Reducto embedding pipeline. 5 ingestion paths (email catch-all, per-entity aliases, mobile camera, PWA share-target, bulk import). Global search at `/owner/search`. Adds the Documents tab to slice 01a profiles. Depends on slice 00 `vector` extension + all 5 API keys provisioned (Ferdinand-owned pre-slice-00 sprint).
+
+Realistic V1 timeline revised to **20–22 weeks** for 2 engineers + freelancer (was 17–18 weeks). The split lets 01a ship independently — La Fattoria can use people + horses + photos before 01b's Reducto integration is ready.
+
 ## Change log
 
+- 2026-05-14 — D17: slice 01 split into 01a (people + horses + photos, 5d) and 01b (documents + ingestion + Reducto + search + aliases, 9d). README phase table updated. Realistic V1 timeline 20–22 weeks. Triggered by `/plan-ceo-review` HOLD SCOPE session.
+- 2026-05-14 — Pre-slice-00 API-key provisioning sprint locked to Ferdinand (TODOS.md). 5 keys: Reducto + DPA, OpenAI embeddings, Anthropic, Resend inbound, Bexio dev sandbox.
+- 2026-05-14 — D16: client-bookable services catalog locked. Slice 05 schema gains `bookable_by_client` + booking rules. Slice 11 gains `/client/services` (catalog) + `/client/services/[id]` (per-service booking page). New mockup `client-services.html`.
+- 2026-05-14 — D15: document ingestion architecture locked. New `domains/document-ingestion.md`. Slice 01 extended with inbox queue + per-entity aliases + mobile scan. Slice 12 PWA manifest gains `share_target`. Slice 16 onboarding gains bulk-import step. New mockup `owner-document-inbox.html`.
+- 2026-05-14 — D14: unified `documents` table + Reducto integration locked. Slice 01 extended with full client + horse profile specs; `domains/document-search.md` written; `client-profile.html` + `horse-profile.html` mockups added. Owner dashboard refreshed with sparklines + timeline + horse strip + alerts band (visual-density rebalance per user feedback). DESIGN.md amended to allow horse photos in three contexts.
+- 2026-05-13 — D13: drop `manager` from membership role enum (V1). Swept across all swept slices + `SCHEMA.md` + `domains/{rls,auth,v1-deferred}.md`.
+- 2026-05-13 — Slice 17 inventory deferred to V1.1 (full spec preserved in `slices/17-inventory.md`; rationale in `domains/v1-deferred.md`).
+- 2026-05-13 — Bexio integration confirmed optional. V1 ships Bexio OR no-integration (manual mark-paid + invoice CSV export). Onboarding picks per-stable. Spec'd in `slices/09-bexio.md` "Scope and choice" + `slices/08-invoice-pdf.md` items 6–7 + `slices/16-pilot.md` wizard.
+- 2026-05-13 — Pilot exit criterion #4 left as self-report only (no objective complement added). Trust-pilot-owner pattern preferred over audit-style metrics for n=1 pilot.
 - 2026-05-07 — Initial decisions captured during pre-coding review. Locks in single-app topology, Next.js 16, Drizzle, Fluid Compute, `@serwist/next`, no-Railway, no-ClamAV-V1, decimal.js, email-only worker login.

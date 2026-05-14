@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<title>Rechnung 2026-0143 — Entwurf · La Fattoria</title>
+<meta name="viewport" content="width=1280, initial-scale=1">
+<link rel="stylesheet" href="_tokens.css">
+<style>
+  /* Owner desktop, 12-col, 320px nav rail. Two-pane layout: editor left, PDF preview right (collapsible).
+     DES-LOCK-1: defaults open desktop, closed tablet. Mobile (≤767) stacks single-pane with "Vorschau" button → drawer-from-bottom. */
+  .app { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; }
+
+  .nav { background: var(--canvas); border-right: 1px solid var(--ink-100); padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); }
+  .nav__brand { display: flex; align-items: center; gap: var(--space-3); padding-bottom: var(--space-4); border-bottom: 1px solid var(--ink-100); }
+  .nav__plaque { width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--clay-200); color: var(--terracotta-700); display: grid; place-items: center; font-family: var(--font-serif); font-weight: 600; }
+  .nav__name { font-family: var(--font-serif); font-size: var(--fs-lg); line-height: var(--lh-lg); font-weight: 500; }
+  .nav__role { font-size: var(--fs-xs); line-height: var(--lh-xs); color: var(--ink-500); }
+  .nav__group { display: flex; flex-direction: column; gap: 2px; margin-top: var(--space-2); }
+  .nav__heading { font-size: var(--fs-xs); line-height: var(--lh-xs); color: var(--ink-500); padding: var(--space-2) var(--space-3); letter-spacing: 0.04em; text-transform: uppercase; }
+  .nav__item { display: flex; align-items: center; gap: var(--space-3); height: 36px; padding: 0 var(--space-3); border-radius: var(--radius-sm); color: var(--ink-700); text-decoration: none; font-size: var(--fs-md); transition: background-color var(--m-tap); }
+  .nav__item:hover { background: var(--paper); }
+  .nav__item--active { background: var(--ink-100); color: var(--ink-900); font-weight: 500; }
+  .nav__icon { width: 18px; height: 18px; color: var(--ink-500); }
+  .nav__item--active .nav__icon { color: var(--terracotta-600); }
+  .nav__user { margin-top: auto; display: flex; align-items: center; gap: var(--space-3); padding-top: var(--space-4); border-top: 1px solid var(--ink-100); }
+  .avatar { width: 32px; height: 32px; border-radius: 999px; background: var(--ink-100); display: grid; place-items: center; color: var(--ink-700); font-size: var(--fs-sm); font-weight: 500; }
+
+  .main { display: grid; grid-template-rows: auto 1fr auto; max-height: 100vh; }
+  .topbar { padding: var(--space-6) var(--space-12); border-bottom: 1px solid var(--ink-100); display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-6); background: var(--canvas); }
+  .topbar__title { display: flex; align-items: center; gap: var(--space-3); font-size: var(--fs-xl); line-height: var(--lh-xl); font-weight: 500; letter-spacing: -0.01em; }
+  .topbar__title .t-serif { font-family: var(--font-serif); }
+  .topbar__sub { color: var(--ink-500); font-size: var(--fs-sm); line-height: var(--lh-sm); margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .topbar__actions { display: flex; gap: var(--space-3); }
+
+  /* Two-pane layout */
+  .panes { display: grid; grid-template-columns: 1fr 480px; gap: var(--space-6); padding: var(--space-6) var(--space-12); overflow: auto; align-items: start; }
+  .panes--collapsed { grid-template-columns: 1fr 0; }
+  .panes--collapsed .preview { display: none; }
+  @media (max-width: 1023px) { .panes { grid-template-columns: 1fr 0; } .panes .preview { display: none; } }
+
+  /* Editor pane */
+  .editor { display: flex; flex-direction: column; gap: var(--space-6); }
+  .editor h3 { font-size: var(--fs-md); line-height: var(--lh-md); font-weight: 500; margin-bottom: var(--space-4); }
+
+  .meta-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-6); }
+  .meta-label { font-size: var(--fs-xs); color: var(--ink-500); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: var(--space-1); }
+  .meta-value { font-size: var(--fs-md); font-weight: 500; }
+  .meta-value.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+  /* Editable line items table */
+  table.tbl { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+  table.tbl th, table.tbl td { padding: var(--space-3) var(--space-2); border-top: 1px solid var(--ink-100); text-align: left; vertical-align: top; }
+  table.tbl th { font-weight: 500; color: var(--ink-500); border-top: 0; font-size: var(--fs-xs); letter-spacing: 0.04em; text-transform: uppercase; }
+  table.tbl td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+  table.tbl th.num { text-align: right; }
+  .row-edit input { width: 100%; border: 1px solid transparent; background: transparent; padding: var(--space-2); border-radius: var(--radius-sm); font: inherit; color: inherit; transition: border-color var(--m-tap), background-color var(--m-tap); font-variant-numeric: tabular-nums; }
+  .row-edit input:hover { background: var(--paper); }
+  .row-edit input:focus { outline: 2px solid var(--terracotta-600); outline-offset: 2px; background: var(--canvas); }
+  .row-edit .num input { text-align: right; font-family: var(--font-mono); }
+  .row-edit .vat-cell { font-family: var(--font-mono); color: var(--ink-700); }
+  .row-edit .row-del { color: var(--ink-500); font-size: var(--fs-sm); cursor: pointer; }
+  .row-edit:hover .row-del { color: var(--rust-600); }
+  .add-line { margin-top: var(--space-4); }
+
+  /* VAT breakdown */
+  .vat-grid { display: grid; grid-template-columns: 1fr 120px 100px; gap: var(--space-2) var(--space-4); align-items: baseline; font-size: var(--fs-sm); }
+  .vat-grid .vat-label { color: var(--ink-700); }
+  .vat-grid .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+  .grand-total { display: flex; align-items: baseline; justify-content: space-between; margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--ink-100); }
+  .grand-total .label { font-size: var(--fs-md); color: var(--ink-700); }
+  .grand-total .amount { font-size: var(--fs-2xl); line-height: var(--lh-2xl); font-weight: 500; letter-spacing: -0.02em; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+  /* Notes */
+  textarea.notes { width: 100%; min-height: 80px; border: 1px solid var(--ink-100); border-radius: var(--radius-sm); padding: var(--space-3); font: inherit; color: inherit; background: var(--canvas); resize: vertical; transition: border-color var(--m-tap); }
+  textarea.notes:focus { outline: 2px solid var(--terracotta-600); outline-offset: 2px; }
+  .lang-row { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-3); font-size: var(--fs-sm); color: var(--ink-500); }
+  .lang-row select { font: inherit; padding: 4px var(--space-2); border: 1px solid var(--ink-100); border-radius: var(--radius-sm); background: var(--canvas); color: var(--ink-900); }
+
+  /* Sticky action bar */
+  .actionbar { padding: var(--space-4) var(--space-12); border-top: 1px solid var(--ink-100); display: flex; align-items: center; justify-content: space-between; background: var(--canvas); }
+  .actionbar__left { font-size: var(--fs-sm); color: var(--ink-500); }
+  .actionbar__right { display: flex; gap: var(--space-3); }
+
+  /* Preview pane */
+  .preview { background: var(--paper); border: 1px solid var(--ink-100); border-radius: var(--radius-md); position: sticky; top: 0; max-height: calc(100vh - var(--space-12)); display: flex; flex-direction: column; }
+  .preview__header { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--ink-100); display: flex; align-items: center; justify-content: space-between; background: var(--canvas); border-radius: var(--radius-md) var(--radius-md) 0 0; }
+  .preview__title { font-size: var(--fs-sm); color: var(--ink-700); }
+  .preview__body { padding: var(--space-6); overflow: auto; flex: 1; }
+
+  /* Mini-rendered PDF preview (mimics slice 08 PDF: stable header, line items, total, QR slip) */
+  .pdf { background: var(--canvas); padding: var(--space-6); font-size: var(--fs-xs); color: var(--ink-900); border: 1px solid var(--ink-100); }
+  .pdf__hdr { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); padding-bottom: var(--space-4); border-bottom: 1px solid var(--ink-100); }
+  .pdf__plaque { width: 48px; height: 48px; border-radius: var(--radius-md); background: var(--clay-200); color: var(--terracotta-700); display: grid; place-items: center; font-family: var(--font-serif); font-weight: 600; font-size: var(--fs-md); }
+  .pdf__name { font-family: var(--font-serif); font-size: var(--fs-md); font-weight: 500; }
+  .pdf__addr { color: var(--ink-500); margin-top: 2px; line-height: 14px; }
+  .pdf__title { font-family: var(--font-serif); font-size: var(--fs-md); font-weight: 500; margin: var(--space-4) 0 var(--space-3); }
+  .pdf__num { font-family: var(--font-mono); color: var(--ink-700); }
+  .pdf__lines { width: 100%; border-collapse: collapse; margin-top: var(--space-3); }
+  .pdf__lines td { padding: 4px 2px; border-top: 1px solid var(--ink-100); }
+  .pdf__lines td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+  .pdf__total-row td { border-top: 1px solid var(--ink-300); padding-top: var(--space-2); }
+  .pdf__total-row td.num { font-weight: 500; }
+  .pdf__qrslip { margin-top: var(--space-6); padding: var(--space-4); border-top: 2px dashed var(--ink-300); display: grid; grid-template-columns: 100px 1fr; gap: var(--space-4); }
+  .pdf__qr { aspect-ratio: 1; background: var(--ink-100); display: grid; place-items: center; color: var(--ink-500); font-size: 9px; font-family: var(--font-mono); border-radius: var(--radius-sm); }
+  .pdf__qrmeta { font-size: 10px; color: var(--ink-700); }
+  .pdf__qrmeta dt { font-weight: 500; color: var(--ink-500); margin-top: var(--space-2); text-transform: uppercase; letter-spacing: 0.04em; font-size: 9px; }
+  .pdf__qrmeta dd { font-family: var(--font-mono); }
+
+  .ico { width: 18px; height: 18px; stroke-width: 1.5; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .pill .pill__dot { width: 8px; height: 8px; border-radius: 999px; background: currentColor; }
+  .kbd { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink-500); padding: 2px var(--space-2); border: 1px solid var(--ink-300); border-radius: var(--radius-sm); }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h4v-6h6v6h4V10"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-horse" viewBox="0 0 24 24"><path d="M5 21V11c0-2 1-4 4-4h6l3-3v6l3 3-3 1v3l-2 4M9 21v-5"/></symbol>
+    <symbol id="i-money" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15 20c0-2 2-3.5 4-3.5s2 .5 2 .5"/></symbol>
+    <symbol id="i-task" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></symbol>
+    <symbol id="i-msg" viewBox="0 0 24 24"><path d="M3 5h18v12H8l-5 4z"/></symbol>
+    <symbol id="i-bex" viewBox="0 0 24 24"><path d="M4 6h12l4 4v8H4z"/><path d="M4 10h16"/></symbol>
+    <symbol id="i-set" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.5-2.4.7a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.3a7 7 0 0 0-2 1.2L5 5.8l-2 3.5 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.5 2.4-.7a7 7 0 0 0 2 1.2L10 21h4l.5-2.3a7 7 0 0 0 2-1.2l2.4.7 2-3.5-2-1.5c.1-.4.1-.8.1-1.2z"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 6.1A10 10 0 0 1 22 12s-1.5 3-4.5 5M14 14a3 3 0 0 1-4-4M6 6.5C3.5 8 2 12 2 12s3.5 7 10 7c2 0 3.6-.5 5-1.3"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M6 18L18 6"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <aside class="nav" aria-label="Hauptnavigation">
+    <div class="nav__brand">
+      <div class="nav__plaque">LF</div>
+      <div>
+        <div class="nav__name">La Fattoria</div>
+        <div class="nav__role">Stallleitung · Anna Frei</div>
+      </div>
+    </div>
+    <div class="nav__group">
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-home"/></svg>Übersicht</a>
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-cal"/></svg>Kalender</a>
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-horse"/></svg>Pferde &amp; Boxen</a>
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-users"/></svg>Kunden</a>
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-task"/></svg>Aufgaben</a>
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-msg"/></svg>Nachrichten</a>
+    </div>
+    <div class="nav__heading">Buchhaltung</div>
+    <div class="nav__group">
+      <a href="#" class="nav__item nav__item--active"><svg class="ico nav__icon"><use href="#i-money"/></svg>Rechnungen</a>
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-bex"/></svg>Bexio</a>
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-set"/></svg>Einstellungen</a>
+    </div>
+    <div class="nav__user">
+      <div class="avatar">AF</div>
+      <div>
+        <div style="font-size: var(--fs-sm); font-weight: 500;">Anna Frei</div>
+        <div class="t-meta">anna@lafattoria.ch</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <div class="topbar__title">
+          <span class="t-serif">Rechnung 2026-0143</span>
+          <span class="pill pill--draft" aria-label="Status Entwurf"><span class="pill__dot"></span> Entwurf</span>
+        </div>
+        <div class="topbar__sub">Familie Keller · Mai 2026 · fällig 14.06.2026</div>
+      </div>
+      <div class="topbar__actions">
+        <button class="btn btn--ghost btn--sm">Verwerfen</button>
+        <button class="btn btn--secondary btn--sm">Entwurf speichern</button>
+        <button class="btn btn--primary btn--sm">Bestätigen + senden</button>
+      </div>
+    </header>
+
+    <div class="panes" id="panes">
+      <section class="editor" aria-label="Rechnung bearbeiten">
+
+        <div class="card">
+          <h3>Empfänger</h3>
+          <div class="meta-grid">
+            <div>
+              <div class="meta-label">Kunde</div>
+              <div class="meta-value">Familie Keller</div>
+              <div class="t-meta">Annika Keller · annika@keller.ch</div>
+            </div>
+            <div>
+              <div class="meta-label">Pferd</div>
+              <div class="meta-value">Diva (Box A7)</div>
+              <div class="t-meta">CHE-123.456.789</div>
+            </div>
+            <div>
+              <div class="meta-label">Periode</div>
+              <div class="meta-value num">01.05.–31.05.2026</div>
+            </div>
+            <div>
+              <div class="meta-label">Sprache</div>
+              <div class="meta-value">Deutsch</div>
+              <div class="t-meta">Rechnung wird in DE versendet</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Leistungen</h3>
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th style="width: 40%">Beschreibung</th>
+                <th class="num" style="width: 60px">Menge</th>
+                <th class="num" style="width: 110px">Einzelpreis</th>
+                <th style="width: 80px">MWST</th>
+                <th class="num" style="width: 110px">Total</th>
+                <th style="width: 24px"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="row-edit">
+                <td><input value="Vollpension Mai 2026" /></td>
+                <td class="num"><input value="1" /></td>
+                <td class="num"><input value="850.00" /></td>
+                <td class="vat-cell">8.1 %</td>
+                <td class="num">850.00</td>
+                <td><span class="row-del" title="Position entfernen">×</span></td>
+              </tr>
+              <tr class="row-edit">
+                <td><input value="Reitstunden (4 × 60 Min.)" /></td>
+                <td class="num"><input value="4" /></td>
+                <td class="num"><input value="80.00" /></td>
+                <td class="vat-cell">8.1 %</td>
+                <td class="num">320.00</td>
+                <td><span class="row-del">×</span></td>
+              </tr>
+              <tr class="row-edit">
+                <td><input value="Heuration zusätzlich (30 Tage)" /></td>
+                <td class="num"><input value="30" /></td>
+                <td class="num"><input value="12.00" /></td>
+                <td class="vat-cell">2.6 %</td>
+                <td class="num">360.00</td>
+                <td><span class="row-del">×</span></td>
+              </tr>
+              <tr class="row-edit">
+                <td><input value="Transport Spital Affoltern (1 Fahrt)" /></td>
+                <td class="num"><input value="1" /></td>
+                <td class="num"><input value="180.00" /></td>
+                <td class="vat-cell">8.1 %</td>
+                <td class="num">180.00</td>
+                <td><span class="row-del">×</span></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="add-line">
+            <button class="btn btn--ghost btn--sm"><svg class="ico"><use href="#i-plus"/></svg> Position hinzufügen</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>MWST-Aufstellung</h3>
+          <div class="vat-grid">
+            <div class="vat-label">Total exkl. MWST · Satz 8.1 %</div>
+            <div class="num">1'350.00</div>
+            <div class="num t-muted">109.35</div>
+            <div class="vat-label">Total exkl. MWST · Satz 2.6 %</div>
+            <div class="num">360.00</div>
+            <div class="num t-muted">9.36</div>
+            <div class="vat-label">Total exkl. MWST</div>
+            <div class="num" style="border-top: 1px solid var(--ink-100); padding-top: 4px;">1'710.00</div>
+            <div class="num t-muted" style="border-top: 1px solid var(--ink-100); padding-top: 4px;">118.71</div>
+          </div>
+          <div class="grand-total">
+            <span class="label">Total inkl. MWST</span>
+            <span class="amount">1'828.71</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Notiz an Kund:in</h3>
+          <textarea class="notes">Vielen Dank für die fortgesetzte Boxenmiete im Mai.</textarea>
+          <div class="lang-row">
+            <span>Sprache der Rechnung</span>
+            <select>
+              <option>Deutsch (canonical)</option>
+              <option>Français</option>
+              <option>Italiano</option>
+            </select>
+          </div>
+        </div>
+
+      </section>
+
+      <aside class="preview" id="preview" aria-label="Live-Vorschau der Rechnung">
+        <div class="preview__header">
+          <span class="preview__title">Vorschau · DE</span>
+          <button class="btn btn--ghost btn--sm" onclick="document.getElementById('panes').classList.add('panes--collapsed')">
+            <svg class="ico"><use href="#i-eye-off"/></svg> Einklappen
+          </button>
+        </div>
+        <div class="preview__body">
+          <div class="pdf">
+            <div class="pdf__hdr">
+              <div style="display: flex; gap: var(--space-3); align-items: flex-start;">
+                <div class="pdf__plaque">LF</div>
+                <div>
+                  <div class="pdf__name">La Fattoria Reitstall</div>
+                  <div class="pdf__addr">
+                    Hofstrasse 14<br>
+                    8910 Affoltern am Albis<br>
+                    UID-MWST: CHE-456.789.012
+                  </div>
+                </div>
+              </div>
+              <div style="text-align: right;">
+                <div class="pdf__addr"><strong>Familie Keller</strong></div>
+                <div class="pdf__addr">
+                  Annika Keller<br>
+                  Mühlestrasse 7<br>
+                  8910 Affoltern am Albis
+                </div>
+              </div>
+            </div>
+
+            <div class="pdf__title">Rechnung <span class="pdf__num">Nr. 2026-0143</span></div>
+            <div class="pdf__addr">Periode: 01.05.–31.05.2026 · Fälligkeit: 14.06.2026</div>
+
+            <table class="pdf__lines">
+              <thead><tr style="color: var(--ink-500); font-size: 9px; text-transform: uppercase; letter-spacing: 0.04em;">
+                <td style="text-align: left;">Beschreibung</td>
+                <td class="num">Menge</td>
+                <td class="num">à</td>
+                <td>MWST</td>
+                <td class="num">Total</td>
+              </tr></thead>
+              <tbody>
+                <tr><td>Vollpension Mai 2026</td><td class="num">1</td><td class="num">850.00</td><td>8.1 %</td><td class="num">850.00</td></tr>
+                <tr><td>Reitstunden (4 × 60 Min.)</td><td class="num">4</td><td class="num">80.00</td><td>8.1 %</td><td class="num">320.00</td></tr>
+                <tr><td>Heuration zusätzlich (30 Tage)</td><td class="num">30</td><td class="num">12.00</td><td>2.6 %</td><td class="num">360.00</td></tr>
+                <tr><td>Transport Spital Affoltern</td><td class="num">1</td><td class="num">180.00</td><td>8.1 %</td><td class="num">180.00</td></tr>
+                <tr class="pdf__total-row"><td colspan="4">Total exkl. MWST</td><td class="num">1'710.00</td></tr>
+                <tr><td colspan="4">MWST 8.1 %</td><td class="num">109.35</td></tr>
+                <tr><td colspan="4">MWST 2.6 %</td><td class="num">9.36</td></tr>
+                <tr class="pdf__total-row" style="font-size: 11px;"><td colspan="4"><strong>Total inkl. MWST</strong></td><td class="num"><strong>CHF 1'828.71</strong></td></tr>
+              </tbody>
+            </table>
+
+            <div style="margin-top: var(--space-4); font-size: 10px; color: var(--ink-700);">Vielen Dank für die fortgesetzte Boxenmiete im Mai.</div>
+
+            <div class="pdf__qrslip">
+              <div class="pdf__qr">[QR<br>SLIP]</div>
+              <dl class="pdf__qrmeta">
+                <dt>Konto / Zahlbar an</dt>
+                <dd>CH44 3199 9123 0008 8901 2<br>La Fattoria Reitstall<br>Hofstrasse 14, 8910 Affoltern</dd>
+                <dt>Referenz</dt>
+                <dd>21 00000 00003 13947 14300 09017</dd>
+                <dt>Betrag · Währung</dt>
+                <dd>CHF 1'828.71</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+
+    <footer class="actionbar">
+      <div class="actionbar__left">Letzte Änderung vor 12 Sek. · Auto-Speichern aktiv</div>
+      <div class="actionbar__right">
+        <button class="btn btn--ghost"><span class="kbd">Esc</span> Verwerfen</button>
+        <button class="btn btn--secondary">Entwurf speichern</button>
+        <button class="btn btn--primary">Bestätigen + senden</button>
+      </div>
+    </footer>
+  </main>
+</div>
+</body>
+</html>

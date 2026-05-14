@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Search — /owner/search</title>
+<meta name="viewport" content="width=1280, initial-scale=1">
+<link rel="stylesheet" href="_tokens.css">
+<style>
+  body { background: var(--paper); margin: 0; font-family: var(--font-sans); color: var(--ink-900); }
+  .app { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; }
+  .rail { background: var(--canvas); border-right: 1px solid var(--ink-100); padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); }
+  .rail__brand { display: flex; align-items: center; gap: var(--space-3); padding-bottom: var(--space-4); border-bottom: 1px solid var(--ink-100); }
+  .rail__plaque { width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--clay-200); color: var(--terracotta-700); display: grid; place-items: center; font-family: var(--font-serif); font-weight: 600; }
+  .rail__name { font-family: var(--font-serif); font-size: var(--fs-lg); font-weight: 500; }
+  .rail__role { font-size: var(--fs-xs); color: var(--ink-500); }
+  .rail__item { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); color: var(--ink-700); font-size: var(--fs-md); }
+  .rail__item--active { background: var(--ink-100); color: var(--ink-900); font-weight: 500; }
+  .rail__item--active .ico { color: var(--terracotta-600); }
+  .rail__icon { color: var(--ink-500); }
+  .ico { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+  .main { padding: var(--space-6) var(--space-8); max-width: 1280px; display: grid; grid-template-columns: 1fr 280px; gap: var(--space-6); }
+  .col-results { min-width: 0; }
+
+  /* Search hero */
+  .topbar { margin-bottom: var(--space-5); }
+  .topbar__title { font-size: var(--fs-xl); font-weight: 500; letter-spacing: -0.01em; }
+  .topbar__sub { font-size: var(--fs-sm); color: var(--ink-500); margin-top: 2px; }
+
+  .hero-search { background: var(--canvas); border: 1px solid var(--ink-300); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); }
+  .hero-search:focus-within { border-color: var(--terracotta-600); }
+  .hero-search input { flex: 1; border: 0; outline: 0; background: transparent; font-size: var(--fs-lg); color: var(--ink-900); font-family: inherit; padding: var(--space-1) 0; }
+  .hero-search input::placeholder { color: var(--ink-500); font-style: italic; }
+  .hero-search__icon { color: var(--terracotta-600); }
+  .hero-search__icon svg { width: 22px; height: 22px; }
+  .hero-search__kbd { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink-500); padding: 2px var(--space-2); border: 1px solid var(--ink-300); border-radius: var(--radius-sm); }
+
+  /* Filter chips */
+  .filters { display: flex; gap: var(--space-2); margin-bottom: var(--space-5); flex-wrap: wrap; align-items: center; }
+  .chip { padding: var(--space-1) var(--space-3); border: 1px solid var(--ink-300); border-radius: 999px; font-size: var(--fs-sm); color: var(--ink-700); cursor: default; display: inline-flex; align-items: center; gap: var(--space-2); }
+  .chip--active { background: var(--ink-900); color: var(--canvas); border-color: var(--ink-900); }
+  .chip__count { font-family: var(--font-mono); font-size: var(--fs-xs); opacity: 0.7; }
+
+  /* Result count */
+  .count-bar { font-size: var(--fs-sm); color: var(--ink-500); padding-bottom: var(--space-3); border-bottom: 1px solid var(--ink-100); margin-bottom: var(--space-4); display: flex; justify-content: space-between; align-items: baseline; }
+  .count-bar strong { color: var(--ink-900); font-weight: 500; }
+
+  /* Result row */
+  .result { display: grid; grid-template-columns: 40px 1fr auto; gap: var(--space-4); padding: var(--space-4); border: 1px solid var(--ink-100); border-radius: var(--radius-md); background: var(--canvas); margin-bottom: var(--space-3); cursor: default; }
+  .result:hover { border-color: var(--ink-300); }
+  .result__type { width: 40px; height: 40px; border-radius: var(--radius-sm); display: grid; place-items: center; font-size: var(--fs-xs); font-weight: 500; }
+  .result__type--doc { background: var(--ink-100); color: var(--ink-700); }
+  .result__type--horse { background: var(--clay-200); color: var(--terracotta-700); }
+  .result__type--client { background: var(--clay-200); color: var(--terracotta-700); }
+  .result__type--event { background: var(--moss-200); color: var(--moss-600); }
+  .result__type--msg { background: var(--ink-100); color: var(--ink-500); }
+  .result__type--invoice { background: var(--ink-100); color: var(--ink-700); }
+
+  .result__body { min-width: 0; }
+  .result__title { font-size: var(--fs-md); font-weight: 500; margin-bottom: 2px; display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; }
+  .result__title em { background: var(--clay-200); color: var(--terracotta-700); font-style: normal; padding: 1px 4px; border-radius: 3px; }
+  .result__path { font-size: var(--fs-xs); color: var(--ink-500); margin-bottom: var(--space-2); display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+  .result__path-sep { color: var(--ink-300); }
+  .result__snippet { font-size: var(--fs-sm); color: var(--ink-700); line-height: 1.5; padding: var(--space-2) var(--space-3); background: var(--paper); border-left: 2px solid var(--clay-200); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+  .result__snippet em { background: var(--clay-200); color: var(--terracotta-700); font-style: normal; padding: 1px 4px; border-radius: 3px; }
+  .result__meta { font-size: var(--fs-xs); color: var(--ink-500); margin-top: var(--space-2); display: flex; gap: var(--space-3); }
+
+  .result__score { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-2); min-width: 88px; }
+  .score-pill { font-size: var(--fs-xs); padding: 1px var(--space-2); border-radius: 999px; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .score-pill--high { background: var(--moss-200); color: var(--moss-600); }
+  .score-pill--mid { background: var(--ochre-200); color: var(--ochre-600); }
+  .score-pill--low { background: var(--ink-100); color: var(--ink-500); }
+  .result__open { font-size: var(--fs-sm); color: var(--terracotta-600); }
+
+  /* Sidebar */
+  .col-side { display: flex; flex-direction: column; gap: var(--space-4); }
+  .side-card { background: var(--canvas); border: 1px solid var(--ink-100); border-radius: var(--radius-md); padding: var(--space-4); }
+  .side-card__title { font-size: var(--fs-xs); color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: var(--space-3); }
+  .side-card__row { display: flex; justify-content: space-between; padding: var(--space-2) 0; border-top: 1px solid var(--ink-100); font-size: var(--fs-sm); }
+  .side-card__row:first-of-type { border-top: 0; }
+  .side-card__row span:last-child { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink-700); }
+  .side-card__status { display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-xs); color: var(--moss-600); }
+  .side-card__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--moss-600); }
+
+  .recent { display: flex; flex-direction: column; gap: 0; }
+  .recent__item { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) 0; border-top: 1px solid var(--ink-100); font-size: var(--fs-sm); color: var(--ink-700); cursor: default; }
+  .recent__item:first-of-type { border-top: 0; }
+  .recent__icon { color: var(--ink-500); }
+  .recent__time { margin-left: auto; font-size: var(--fs-xs); color: var(--ink-500); font-family: var(--font-mono); }
+
+  .tip { font-size: var(--fs-xs); color: var(--ink-500); line-height: 1.6; }
+  .tip code { background: var(--ink-100); padding: 1px 4px; border-radius: 3px; font-size: var(--fs-xs); color: var(--ink-700); }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h4v-6h6v6h4V10"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></symbol>
+    <symbol id="i-horse" viewBox="0 0 24 24"><path d="M5 21V11c0-2 1-4 4-4h6l3-3v6l3 3-3 1v3l-2 4M9 21v-5"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/></symbol>
+    <symbol id="i-money" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/></symbol>
+    <symbol id="i-msg" viewBox="0 0 24 24"><path d="M3 5h18v12H8l-5 4z"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <aside class="rail">
+    <div class="rail__brand"><div class="rail__plaque">LF</div><div><div class="rail__name">La Fattoria</div><div class="rail__role">Anna Frei</div></div></div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-home"/></svg>Overview</div>
+    <div class="rail__item rail__item--active"><svg class="ico rail__icon"><use href="#i-search"/></svg>Search</div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-horse"/></svg>Horses &amp; Stalls</div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-users"/></svg>Clients</div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-cal"/></svg>Schedule</div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-money"/></svg>Accounting</div>
+  </aside>
+
+  <main class="main">
+    <div class="col-results">
+      <div class="topbar">
+        <div class="topbar__title">Search</div>
+        <div class="topbar__sub">Natural-language search across documents, horses, clients, events, messages, invoices.</div>
+      </div>
+
+      <div class="hero-search">
+        <span class="hero-search__icon"><svg><use href="#i-search"/></svg></span>
+        <input value='Diva vaccination 2026' autofocus/>
+        <span class="hero-search__kbd">⌘K</span>
+      </div>
+
+      <div class="filters">
+        <span class="chip chip--active">All <span class="chip__count">14</span></span>
+        <span class="chip">Documents <span class="chip__count">8</span></span>
+        <span class="chip">Horses <span class="chip__count">1</span></span>
+        <span class="chip">Clients <span class="chip__count">0</span></span>
+        <span class="chip">Events <span class="chip__count">3</span></span>
+        <span class="chip">Messages <span class="chip__count">2</span></span>
+        <span class="chip">Invoices <span class="chip__count">0</span></span>
+        <span class="chip" style="border-style: dashed;">⚙ Last 12 months ▼</span>
+      </div>
+
+      <div class="count-bar">
+        <span><strong>14 results</strong> for &ldquo;Diva vaccination 2026&rdquo; · sorted by relevance</span>
+        <span>Ranked by embedding similarity (cosine)</span>
+      </div>
+
+      <!-- HIGH-CONFIDENCE RESULT — vet doc -->
+      <div class="result">
+        <div class="result__type result__type--doc"><svg class="ico"><use href="#i-doc"/></svg></div>
+        <div class="result__body">
+          <div class="result__title">Vet report — Influenza <em>vaccination</em></div>
+          <div class="result__path">
+            <svg class="ico" style="width: 12px; height: 12px; color: var(--ink-500);"><use href="#i-horse"/></svg>
+            <span>Diva</span>
+            <span class="result__path-sep">›</span>
+            <span>Owner: Marta Keller</span>
+            <span class="result__path-sep">›</span>
+            <span>vet · 720 KB · 5 May 2026</span>
+          </div>
+          <div class="result__snippet">… annual influenza <em>vaccination</em> administered to <em>Diva</em> on 05.05.<em>2026</em> by Dr. T. Brunner. No adverse reaction. Next booster due May <em>2027</em>. Booster combined with tetanus possible …</div>
+          <div class="result__meta">
+            <span>Reducto-extracted DE · 2 pages</span>
+            <span>Uploaded by Anna Frei</span>
+          </div>
+        </div>
+        <div class="result__score">
+          <span class="score-pill score-pill--high">0.94</span>
+          <span class="result__open">Open PDF →</span>
+        </div>
+      </div>
+
+      <!-- Horse profile match -->
+      <div class="result">
+        <div class="result__type result__type--horse"><svg class="ico"><use href="#i-horse"/></svg></div>
+        <div class="result__body">
+          <div class="result__title"><em>Diva</em></div>
+          <div class="result__path">
+            <span>Holsteiner mare · 12 yr · Stall B7</span>
+            <span class="result__path-sep">›</span>
+            <span>Owner: Marta Keller</span>
+          </div>
+          <div class="result__snippet">… last <em>vaccination</em> 05.05.<em>2026</em> · last farrier 22.04.2026 · insurance renewal in 18 days · 5 photos · 7 documents on file …</div>
+          <div class="result__meta">
+            <span>Profile match (name + recent activity)</span>
+          </div>
+        </div>
+        <div class="result__score">
+          <span class="score-pill score-pill--high">0.89</span>
+          <span class="result__open">Open profile →</span>
+        </div>
+      </div>
+
+      <!-- Mid-confidence: vet authorisation doc -->
+      <div class="result">
+        <div class="result__type result__type--doc"><svg class="ico"><use href="#i-doc"/></svg></div>
+        <div class="result__body">
+          <div class="result__title">Vet authorisation form — <em>Diva</em></div>
+          <div class="result__path">
+            <svg class="ico" style="width: 12px; height: 12px; color: var(--ink-500);"><use href="#i-horse"/></svg>
+            <span>Diva</span>
+            <span class="result__path-sep">›</span>
+            <span>authorisation · 240 KB · 3 Mar 2025</span>
+            <span class="result__path-sep">›</span>
+            <span style="color: var(--moss-600);">expires 31.12.2027</span>
+          </div>
+          <div class="result__snippet">… Marta Keller authorises veterinary treatment for <em>Diva</em> (UELN CHE40012345678) including but not limited to <em>vaccination</em>s, dental procedures, and emergency interventions up to CHF 2'000 without prior consent …</div>
+          <div class="result__meta"><span>Reducto-extracted DE · 1 page</span></div>
+        </div>
+        <div class="result__score">
+          <span class="score-pill score-pill--mid">0.71</span>
+          <span class="result__open">Open PDF →</span>
+        </div>
+      </div>
+
+      <!-- Event match -->
+      <div class="result">
+        <div class="result__type result__type--event"><svg class="ico"><use href="#i-cal"/></svg></div>
+        <div class="result__body">
+          <div class="result__title">Vet — <em>Diva</em> (Box 7)</div>
+          <div class="result__path">
+            <span>Tuesday 5 May <em>2026</em> · 09:00</span>
+            <span class="result__path-sep">›</span>
+            <span>Dr. Brunner · Influenza <em>vaccination</em></span>
+          </div>
+          <div class="result__snippet">… Calendar event linked to vet report PDF above. Confirmed by Marta Keller. Pre-visit prep: check temperature, fast 2h prior …</div>
+          <div class="result__meta"><span>Title + notes match</span></div>
+        </div>
+        <div class="result__score">
+          <span class="score-pill score-pill--mid">0.68</span>
+          <span class="result__open">Open event →</span>
+        </div>
+      </div>
+
+      <!-- Tetanus doc — also mentions vaccination -->
+      <div class="result">
+        <div class="result__type result__type--doc"><svg class="ico"><use href="#i-doc"/></svg></div>
+        <div class="result__body">
+          <div class="result__title">Tetanus booster — <em>Diva</em></div>
+          <div class="result__path">
+            <svg class="ico" style="width: 12px; height: 12px; color: var(--ink-500);"><use href="#i-horse"/></svg>
+            <span>Diva</span>
+            <span class="result__path-sep">›</span>
+            <span>vet · 480 KB · 22 Nov 2024</span>
+          </div>
+          <div class="result__snippet">… 5-year tetanus <em>vaccination</em> renewed for <em>Diva</em>. Combined intramuscular injection. Reaction: none. Next due November 2029 …</div>
+          <div class="result__meta"><span>Reducto-extracted DE · 1 page</span></div>
+        </div>
+        <div class="result__score">
+          <span class="score-pill score-pill--mid">0.62</span>
+          <span class="result__open">Open PDF →</span>
+        </div>
+      </div>
+
+      <!-- Message match -->
+      <div class="result">
+        <div class="result__type result__type--msg"><svg class="ico"><use href="#i-msg"/></svg></div>
+        <div class="result__body">
+          <div class="result__title">Message thread — Marta Keller</div>
+          <div class="result__path">
+            <span>5 May <em>2026</em> · 16:08</span>
+            <span class="result__path-sep">›</span>
+            <span>About <em>Diva</em></span>
+          </div>
+          <div class="result__snippet">… Soll ich anwesend sein bei der <em>Impfung</em> oder reicht es, wenn das Stallpersonal vor Ort ist? Termin morgen 09:00 mit Dr. Brunner …</div>
+          <div class="result__meta"><span>Client message</span></div>
+        </div>
+        <div class="result__score">
+          <span class="score-pill score-pill--low">0.54</span>
+          <span class="result__open">Open thread →</span>
+        </div>
+      </div>
+
+      <div style="text-align: center; padding: var(--space-4); font-size: var(--fs-sm); color: var(--ink-500);">
+        … 8 more results below the 0.5 similarity threshold &nbsp;&nbsp; <span style="color: var(--terracotta-600);">Show low-confidence matches →</span>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="col-side">
+      <div class="side-card">
+        <div class="side-card__title">Index status</div>
+        <div class="side-card__row"><span>Documents indexed</span><span>187 / 189</span></div>
+        <div class="side-card__row"><span>Last sync</span><span>2 min ago</span></div>
+        <div class="side-card__row"><span>Pending</span><span>2 (processing)</span></div>
+        <div class="side-card__row"><span>Failed</span><span style="color: var(--ink-500);">0</span></div>
+        <div style="margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--ink-100);">
+          <div class="side-card__status"><span class="side-card__dot"></span>Reducto pipeline healthy</div>
+        </div>
+      </div>
+
+      <div class="side-card">
+        <div class="side-card__title">Recent searches</div>
+        <div class="recent">
+          <div class="recent__item"><svg class="ico recent__icon"><use href="#i-clock"/></svg>Marta insurance 2026<span class="recent__time">12 min</span></div>
+          <div class="recent__item"><svg class="ico recent__icon"><use href="#i-clock"/></svg>Akira farrier last visit<span class="recent__time">2 h</span></div>
+          <div class="recent__item"><svg class="ico recent__icon"><use href="#i-clock"/></svg>Boarding contract Keller<span class="recent__time">yesterday</span></div>
+          <div class="recent__item"><svg class="ico recent__icon"><use href="#i-clock"/></svg>Insurance renewal May<span class="recent__time">2 days</span></div>
+        </div>
+      </div>
+
+      <div class="side-card">
+        <div class="side-card__title">Search tips</div>
+        <div class="tip">
+          Searches use embedding similarity, not literal keyword matching. So <code>"horse vaccination"</code> finds the same things as <code>"impfung pferd"</code>. Cross-language by design — your documents are in DE, FR, IT, EN.
+          <br><br>
+          Use <code>⌘K</code> from anywhere for the quick search modal. This page (<code>/owner/search</code>) is for deeper exploration with filter chips and the index status.
+        </div>
+      </div>
+    </aside>
+  </main>
+</div>
+</body>
+</html>

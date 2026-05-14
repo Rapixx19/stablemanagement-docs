@@ -18,10 +18,10 @@ $$;
 
 create or replace function auth.current_role(p_stable_id uuid) returns text
 language sql stable as $$
-  -- highest privilege wins (owner > manager > worker > client)
+  -- highest privilege wins (owner > worker > client)
   select role from memberships
   where user_id = auth.uid() and stable_id = p_stable_id
-  order by array_position(ARRAY['owner','manager','worker','client']::text[], role)
+  order by array_position(ARRAY['owner','worker','client']::text[], role)
   limit 1;
 $$;
 ```
@@ -37,7 +37,7 @@ create policy horses_select on horses for select
 create policy horses_owner_write on horses for all
   using (
     stable_id in (select auth.current_stable_ids())
-    and auth.current_role(stable_id) in ('owner','manager')
+    and auth.current_role(stable_id) = 'owner'
   );
 ```
 
@@ -48,7 +48,7 @@ create policy horses_client_select on horses for select
   using (
     stable_id in (select auth.current_stable_ids())
     and (
-      auth.current_role(stable_id) in ('owner','manager','worker')
+      auth.current_role(stable_id) in ('owner','worker')
       or owner_person_id in (
         select id from people
         where user_id = auth.uid() and stable_id = horses.stable_id

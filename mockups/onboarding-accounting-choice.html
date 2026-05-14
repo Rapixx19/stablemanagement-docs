@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<title>Erstes Setup — Buchhaltungswahl — slice 16 onboarding</title>
+<meta name="viewport" content="width=1280, initial-scale=1">
+<link rel="stylesheet" href="_tokens.css">
+<style>
+  body { background: var(--paper); margin: 0; font-family: var(--font-sans); color: var(--ink-900); min-height: 100vh; display: grid; place-items: center; padding: var(--space-8); }
+  .wizard { max-width: 880px; width: 100%; }
+  .progress { display: flex; gap: var(--space-2); margin-bottom: var(--space-8); }
+  .progress__step { flex: 1; height: 4px; border-radius: 2px; background: var(--ink-100); }
+  .progress__step--done { background: var(--moss-600); }
+  .progress__step--active { background: var(--terracotta-600); }
+  .progress__labels { display: flex; gap: var(--space-2); margin-top: var(--space-2); }
+  .progress__lbl { flex: 1; font-size: var(--fs-xs); color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.04em; }
+  .progress__lbl--done { color: var(--moss-600); }
+  .progress__lbl--active { color: var(--terracotta-600); font-weight: 500; }
+
+  .step-title { font-family: var(--font-serif); font-size: var(--fs-2xl); line-height: var(--lh-2xl); font-weight: 500; letter-spacing: -0.02em; margin-bottom: var(--space-3); }
+  .step-sub { font-size: var(--fs-md); color: var(--ink-700); margin-bottom: var(--space-8); max-width: 640px; line-height: 1.6; }
+
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); margin-bottom: var(--space-8); }
+  .choice { background: var(--canvas); border: 2px solid var(--ink-100); border-radius: var(--radius-md); padding: var(--space-6); cursor: default; transition: border-color var(--m-tap), background-color var(--m-tap); position: relative; }
+  .choice:hover { border-color: var(--ink-300); }
+  .choice--selected { border-color: var(--terracotta-600); background: var(--paper); }
+  .choice--selected::after { content: '✓'; position: absolute; top: var(--space-3); right: var(--space-3); width: 24px; height: 24px; background: var(--terracotta-600); color: var(--canvas); border-radius: 50%; display: grid; place-items: center; font-size: var(--fs-sm); font-weight: 600; }
+  .choice__rec { font-size: var(--fs-xs); color: var(--moss-600); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: var(--space-2); font-weight: 500; }
+  .choice__title { font-family: var(--font-serif); font-size: var(--fs-lg); line-height: var(--lh-lg); font-weight: 500; margin-bottom: var(--space-3); }
+  .choice__body { font-size: var(--fs-sm); color: var(--ink-700); line-height: 1.6; margin-bottom: var(--space-4); }
+  .choice__features { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--space-2); font-size: var(--fs-sm); color: var(--ink-700); }
+  .choice__features li { display: flex; gap: var(--space-2); align-items: baseline; }
+  .choice__features li::before { content: '✓'; color: var(--moss-600); font-weight: 600; }
+  .choice__feature--off::before { content: '○'; color: var(--ink-300); font-weight: 400; }
+
+  .helper { padding: var(--space-3) var(--space-4); border: 1px dashed var(--ink-300); border-radius: var(--radius-sm); font-size: var(--fs-sm); color: var(--ink-700); background: var(--canvas); margin-bottom: var(--space-6); display: flex; gap: var(--space-3); align-items: flex-start; }
+  .ico { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.5; fill: none; color: var(--ink-500); }
+
+  .actions { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); }
+  .skip-note { font-size: var(--fs-sm); color: var(--ink-500); }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M12 16h.01"/></symbol>
+  </defs>
+</svg>
+
+<div class="wizard">
+
+  <div class="progress" role="progressbar" aria-valuenow="7" aria-valuemin="1" aria-valuemax="9">
+    <div class="progress__step progress__step--done"></div>
+    <div class="progress__step progress__step--done"></div>
+    <div class="progress__step progress__step--done"></div>
+    <div class="progress__step progress__step--done"></div>
+    <div class="progress__step progress__step--done"></div>
+    <div class="progress__step progress__step--done"></div>
+    <div class="progress__step progress__step--active"></div>
+    <div class="progress__step"></div>
+    <div class="progress__step"></div>
+  </div>
+  <div class="progress__labels">
+    <div class="progress__lbl progress__lbl--done">Stall</div>
+    <div class="progress__lbl progress__lbl--done">Boxen</div>
+    <div class="progress__lbl progress__lbl--done">Kunden</div>
+    <div class="progress__lbl progress__lbl--done">Pferde</div>
+    <div class="progress__lbl progress__lbl--done">Katalog</div>
+    <div class="progress__lbl progress__lbl--done">MWST</div>
+    <div class="progress__lbl progress__lbl--active">Buchhaltung</div>
+    <div class="progress__lbl">Mitarbeiter</div>
+    <div class="progress__lbl">Fertig</div>
+  </div>
+
+  <div style="height: var(--space-12);"></div>
+
+  <h1 class="step-title">Wie machst du deine Buchhaltung?</h1>
+  <p class="step-sub">Wir helfen entweder direkt (Bexio) oder du erledigst die Buchung in deinem eigenen Tool — wir liefern die Rechnungen als PDF und CSV. Du kannst die Auswahl später jederzeit ändern.</p>
+
+  <div class="choices">
+
+    <div class="choice choice--selected">
+      <div class="choice__rec">Empfohlen</div>
+      <h2 class="choice__title">Bexio</h2>
+      <p class="choice__body">Du benutzt bereits Bexio (oder fängst damit an). Wir senden jede bestätigte Rechnung automatisch dorthin. Wenn dein Kunde via QR bezahlt, sehen wir es innerhalb von 30 Minuten und markieren den Status hier als bezahlt.</p>
+      <ul class="choice__features">
+        <li>Automatische Übertragung jeder Rechnung</li>
+        <li>QR-Bill Abgleich alle 30 Min</li>
+        <li>Mahnungen, MWST-Reports laufen wie gewohnt in Bexio</li>
+        <li>Treuhänder-Zugang bleibt unverändert</li>
+      </ul>
+      <div style="margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--ink-100); font-size: var(--fs-sm); color: var(--ink-500);">Im nächsten Schritt: OAuth-Anmeldung bei Bexio</div>
+    </div>
+
+    <div class="choice">
+      <h2 class="choice__title">Kein / Anderes Tool</h2>
+      <p class="choice__body">Du nutzt Banana, KLARA, CashCtrl, Excel oder Papier. Wir generieren PDF + CSV; du markierst Zahlungen bei uns manuell, wenn der Kontoauszug eintrifft.</p>
+      <ul class="choice__features">
+        <li>PDF-Rechnungen mit QR-Bill</li>
+        <li>CSV-Export pro Periode (Banana, KLARA, CashCtrl)</li>
+        <li>Manueller „Als bezahlt markieren"-Knopf</li>
+        <li class="choice__feature--off">Keine automatische Synchronisation</li>
+      </ul>
+      <div style="margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--ink-100); font-size: var(--fs-sm); color: var(--ink-500);">Im nächsten Schritt: weiter zu Mitarbeitern</div>
+    </div>
+
+  </div>
+
+  <div class="helper">
+    <svg class="ico"><use href="#i-info"/></svg>
+    <div>
+      Beide Wege funktionieren mit allen Schweizer Banken. Der einzige Unterschied: bei Bexio läuft die Status-Aktualisierung automatisch, sonst tippst du sie manuell ein. Du kannst die Wahl unter <code>Einstellungen → Buchhaltung</code> jederzeit umstellen.
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn--ghost">← Zurück</button>
+    <div style="display: flex; gap: var(--space-3); align-items: center;">
+      <span class="skip-note">Schritt 7 von 9</span>
+      <button class="btn btn--primary">Weiter: Bexio verbinden →</button>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
