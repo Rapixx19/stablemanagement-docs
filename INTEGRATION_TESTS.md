@@ -16,11 +16,12 @@ Unit tests are not integration tests. Mocking the DB defeats the purpose.
 
 ## Where they live
 
+Single Next.js app at `apps/web/` (see `DECISIONS.md` D1), tests namespaced by route tree:
+
 ```
-apps/owner/tests/integration/
-apps/client/tests/integration/
-apps/worker/tests/integration/
-apps/owner/tests/rls/        ← isolation tests, paired per-table
+apps/web/tests/integration/{owner,client,worker}/
+apps/web/tests/rls/                  ← isolation tests, paired per-table
+apps/web/tests/e2e/                  ← Playwright slice exit demos
 ```
 
 ## RLS isolation suite (mandatory, runs on every PR)

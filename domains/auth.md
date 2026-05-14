@@ -7,9 +7,10 @@ Three apps, four roles, one Supabase Auth tenant. The trickier-than-it-looks par
 | Role | Apps accessible | Powers |
 |---|---|---|
 | `owner` | Owner | Everything in the stable: people, horses, billing, settings, integrations |
-| `manager` | Owner | Same as owner except billing settings, Bexio connect, user management |
 | `worker` | Worker | Their schedule, tasks assigned to them, time clock, ask-the-boss messaging |
 | `client` | Client | Their horses, calendar (own + public), their invoices, messaging, requests |
+
+V1 has **no `manager` role** (dropped per `DECISIONS.md` D13). Pilot is one stable with one owner; no current slice needs an owner-with-narrower-permissions distinct from owner. Adding `manager` back is a clean migration if multi-stable chain ops or stable delegates emerge in V1.1+.
 
 Membership is `(user_id, stable_id, role)`. A user can have many — one user can be a worker at stable A and a client at stable B. Even simultaneously at the same stable (working student boards her own horse).
 
@@ -95,7 +96,7 @@ First worker login must accept the time-clock consent (slice 12). This is stored
 Three layers:
 
 1. **UI**: components conditionally render based on role. Cosmetic only.
-2. **Server actions**: `requireRole(ctx, stableId, ['owner', 'manager'])` at the top of every privileged action. Throws.
+2. **Server actions**: `requireRole(ctx, stableId, ['owner'])` at the top of every privileged action. Throws.
 3. **RLS**: the database is the final line. Policies branch on `auth.current_role(stable_id)`.
 
 Never rely on UI alone. Every server action checks. Every table has RLS.

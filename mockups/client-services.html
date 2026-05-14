@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Book a service — La Fattoria</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="_tokens.css">
+<style>
+  body { background: var(--paper); margin: 0; font-family: var(--font-sans); color: var(--ink-900); }
+  .top { background: var(--canvas); border-bottom: 1px solid var(--ink-100); padding: var(--space-4) 0; }
+  .top__inner { max-width: 960px; margin: 0 auto; padding: 0 var(--space-6); display: grid; grid-template-columns: auto 1fr auto; gap: var(--space-6); align-items: center; }
+  .top__brand { display: flex; align-items: center; gap: var(--space-3); }
+  .top__plaque { width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--clay-200); color: var(--terracotta-700); display: grid; place-items: center; font-family: var(--font-serif); font-weight: 600; }
+  .top__name { font-family: var(--font-serif); font-size: var(--fs-md); font-weight: 500; }
+  .top__nav { display: flex; gap: var(--space-6); }
+  .top__nav a { color: var(--ink-700); text-decoration: none; font-size: var(--fs-md); padding: var(--space-2) 0; border-bottom: 2px solid transparent; }
+  .top__nav a.is-active { color: var(--ink-900); font-weight: 500; border-bottom-color: var(--terracotta-600); }
+  .avatar { width: 32px; height: 32px; border-radius: 999px; background: var(--ink-100); display: grid; place-items: center; color: var(--ink-700); font-size: var(--fs-sm); font-weight: 500; }
+
+  .page { max-width: 960px; margin: 0 auto; padding: var(--space-8) var(--space-6); }
+
+  .head { margin-bottom: var(--space-8); }
+  .head__title { font-family: var(--font-serif); font-size: var(--fs-2xl); line-height: var(--lh-2xl); font-weight: 500; letter-spacing: -0.02em; margin-bottom: var(--space-2); }
+  .head__sub { font-size: var(--fs-md); color: var(--ink-700); }
+
+  /* Category section */
+  .category { margin-bottom: var(--space-12); }
+  .category__head { display: flex; align-items: baseline; justify-content: space-between; padding-bottom: var(--space-3); border-bottom: 1px solid var(--ink-100); margin-bottom: var(--space-4); }
+  .category__title { font-size: var(--fs-md); font-weight: 500; color: var(--ink-700); text-transform: uppercase; letter-spacing: 0.04em; font-size: var(--fs-xs); }
+  .category__count { font-size: var(--fs-xs); color: var(--ink-500); font-family: var(--font-mono); }
+
+  /* Service grid */
+  .services { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
+  .service { background: var(--canvas); border: 1px solid var(--ink-100); border-radius: var(--radius-md); padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); cursor: default; }
+  .service:hover { border-color: var(--terracotta-600); }
+  .service__head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); }
+  .service__name { font-family: var(--font-serif); font-size: var(--fs-lg); line-height: var(--lh-lg); font-weight: 500; }
+  .service__price { font-family: var(--font-mono); font-size: var(--fs-md); color: var(--ink-900); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .service__price-sub { font-size: var(--fs-xs); color: var(--ink-500); display: block; text-align: right; }
+  .service__desc { font-size: var(--fs-sm); color: var(--ink-700); line-height: 1.5; }
+
+  .service__provider { display: flex; align-items: center; gap: var(--space-2); font-size: var(--fs-sm); color: var(--ink-700); }
+  .service__provider-avatar { width: 24px; height: 24px; border-radius: 999px; background: var(--ink-100); color: var(--ink-700); display: grid; place-items: center; font-size: var(--fs-xs); font-weight: 500; }
+
+  .service__dates { padding-top: var(--space-3); border-top: 1px solid var(--ink-100); display: flex; flex-direction: column; gap: var(--space-2); }
+  .service__dates-lbl { font-size: var(--fs-xs); color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.04em; }
+  .service__date-pills { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+  .date-pill { padding: var(--space-1) var(--space-3); background: var(--moss-200); color: var(--moss-600); border-radius: var(--radius-sm); font-size: var(--fs-sm); font-family: var(--font-mono); display: inline-flex; align-items: center; gap: var(--space-2); cursor: default; }
+  .date-pill__count { background: var(--canvas); color: var(--moss-600); font-size: var(--fs-xs); padding: 0 4px; border-radius: 999px; font-weight: 500; }
+  .date-pill--more { background: var(--ink-100); color: var(--ink-700); }
+
+  .service__cta { padding-top: var(--space-3); display: flex; justify-content: space-between; align-items: center; }
+  .service__rules { font-size: var(--fs-xs); color: var(--ink-500); }
+
+  /* Service unavailable variant */
+  .service--unavailable { opacity: 0.7; }
+  .service--unavailable .service__dates-lbl { color: var(--ochre-600); }
+  .service--unavailable .service__date-pills { color: var(--ochre-600); font-style: italic; font-size: var(--fs-sm); }
+
+  /* Bottom note */
+  .bottom-note { padding: var(--space-5); background: var(--canvas); border: 1px dashed var(--ink-300); border-radius: var(--radius-md); margin-top: var(--space-8); display: flex; gap: var(--space-3); align-items: flex-start; font-size: var(--fs-sm); color: var(--ink-700); line-height: 1.6; }
+  .bottom-note__icon { color: var(--ink-500); margin-top: 2px; }
+  .ico { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M12 16h.01"/></symbol>
+  </defs>
+</svg>
+
+<header class="top">
+  <div class="top__inner">
+    <div class="top__brand"><div class="top__plaque">LF</div><div class="top__name">La Fattoria</div></div>
+    <nav class="top__nav">
+      <a href="#">Overview</a>
+      <a href="#">Calendar</a>
+      <a href="#" class="is-active">Book</a>
+      <a href="#">Invoices</a>
+      <a href="#">Messages</a>
+    </nav>
+    <div class="avatar">MK</div>
+  </div>
+</header>
+
+<main class="page">
+
+  <div class="head">
+    <h1 class="head__title">Book a service</h1>
+    <p class="head__sub">Pick what you need. Tap a date to see times. Your request goes to Anna for confirmation.</p>
+  </div>
+
+  <!-- Category 1: Riding -->
+  <section class="category">
+    <div class="category__head">
+      <h2 class="category__title">Riding</h2>
+      <span class="category__count">3 services</span>
+    </div>
+    <div class="services">
+
+      <div class="service">
+        <div class="service__head">
+          <div class="service__name">Reitstunde mit Rita</div>
+          <div>
+            <div class="service__price">80.—</div>
+            <span class="service__price-sub">per hour</span>
+          </div>
+        </div>
+        <div class="service__desc">Einzelstunde 60 Min in Halle B oder Springplatz aussen. Klassische Dressur und Springen, alle Niveaus.</div>
+        <div class="service__provider">
+          <div class="service__provider-avatar">R</div>
+          <span>Rita Schenk · Bereiterin</span>
+        </div>
+        <div class="service__dates">
+          <div class="service__dates-lbl">Next available</div>
+          <div class="service__date-pills">
+            <span class="date-pill">Sa 9.5 <span class="date-pill__count">3</span></span>
+            <span class="date-pill">Mi 13.5 <span class="date-pill__count">2</span></span>
+            <span class="date-pill">Sa 16.5 <span class="date-pill__count">4</span></span>
+            <span class="date-pill date-pill--more">+ 8 more →</span>
+          </div>
+        </div>
+        <div class="service__cta">
+          <span class="service__rules">24 h notice required · book up to 60 days out</span>
+          <button class="btn btn--primary btn--sm">Book →</button>
+        </div>
+      </div>
+
+      <div class="service">
+        <div class="service__head">
+          <div class="service__name">Springkurs (Gruppe)</div>
+          <div>
+            <div class="service__price">220.—</div>
+            <span class="service__price-sub">per day</span>
+          </div>
+        </div>
+        <div class="service__desc">Tagesstark Springen für Fortgeschrittene. Maximal 6 Reiter pro Gruppe.</div>
+        <div class="service__provider">
+          <div class="service__provider-avatar">L</div>
+          <span>Lorenzo Rossi · Bereiter</span>
+        </div>
+        <div class="service__dates">
+          <div class="service__dates-lbl">Next available</div>
+          <div class="service__date-pills">
+            <span class="date-pill">So 17.5 <span class="date-pill__count">4</span></span>
+            <span class="date-pill">Sa 30.5 <span class="date-pill__count">6</span></span>
+            <span class="date-pill date-pill--more">+ 2 more →</span>
+          </div>
+        </div>
+        <div class="service__cta">
+          <span class="service__rules">48 h notice · max 30 days out</span>
+          <button class="btn btn--primary btn--sm">Book →</button>
+        </div>
+      </div>
+
+      <div class="service service--unavailable">
+        <div class="service__head">
+          <div class="service__name">Beritt-Wochenkarte</div>
+          <div>
+            <div class="service__price">240.—</div>
+            <span class="service__price-sub">3× per week</span>
+          </div>
+        </div>
+        <div class="service__desc">3 Trainings pro Woche durch unser Team. Ideal für Sportpferde, die regelmässig in Form bleiben sollen.</div>
+        <div class="service__dates">
+          <div class="service__dates-lbl">Next available</div>
+          <div class="service__date-pills">Aktuell ausgebucht — kontaktiere Anna direkt.</div>
+        </div>
+        <div class="service__cta">
+          <span class="service__rules">Subscription model · contact for details</span>
+          <button class="btn btn--secondary btn--sm">Anfragen</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Category 2: Care & Hoof -->
+  <section class="category">
+    <div class="category__head">
+      <h2 class="category__title">Care &amp; Hoof</h2>
+      <span class="category__count">3 services</span>
+    </div>
+    <div class="services">
+
+      <div class="service">
+        <div class="service__head">
+          <div class="service__name">Hufschmied — Felix Lerch</div>
+          <div>
+            <div class="service__price">80.—</div>
+            <span class="service__price-sub">per shoeing</span>
+          </div>
+        </div>
+        <div class="service__desc">Felix kommt jeden zweiten Freitag auf den Hof. Buche einen Slot für Beschlag oder Korrektur.</div>
+        <div class="service__provider">
+          <div class="service__provider-avatar">F</div>
+          <span>Felix Lerch · external farrier</span>
+        </div>
+        <div class="service__dates">
+          <div class="service__dates-lbl">Next available</div>
+          <div class="service__date-pills">
+            <span class="date-pill">Fr 16.5 <span class="date-pill__count">2</span></span>
+            <span class="date-pill">Fr 30.5 <span class="date-pill__count">4</span></span>
+            <span class="date-pill">Fr 13.6 <span class="date-pill__count">4</span></span>
+          </div>
+        </div>
+        <div class="service__cta">
+          <span class="service__rules">48 h notice · 4 slots per day</span>
+          <button class="btn btn--primary btn--sm">Book →</button>
+        </div>
+      </div>
+
+      <div class="service">
+        <div class="service__head">
+          <div class="service__name">Solarium</div>
+          <div>
+            <div class="service__price">15.—</div>
+            <span class="service__price-sub">per session</span>
+          </div>
+        </div>
+        <div class="service__desc">Wärmesolarium nach dem Training oder bei kalten Tagen. 20 Min Sitzungen.</div>
+        <div class="service__dates">
+          <div class="service__dates-lbl">Next available</div>
+          <div class="service__date-pills">
+            <span class="date-pill">Heute <span class="date-pill__count">5</span></span>
+            <span class="date-pill">Mi 6.5 <span class="date-pill__count">8</span></span>
+            <span class="date-pill">Do 7.5 <span class="date-pill__count">8</span></span>
+            <span class="date-pill date-pill--more">+ daily →</span>
+          </div>
+        </div>
+        <div class="service__cta">
+          <span class="service__rules">2 h notice · self-service</span>
+          <button class="btn btn--primary btn--sm">Book →</button>
+        </div>
+      </div>
+
+      <div class="service">
+        <div class="service__head">
+          <div class="service__name">Equine massage</div>
+          <div>
+            <div class="service__price">120.—</div>
+            <span class="service__price-sub">60 min</span>
+          </div>
+        </div>
+        <div class="service__desc">Spannungslösung und Beweglichkeit. Bei Sportpferden besonders empfohlen vor Turnieren.</div>
+        <div class="service__provider">
+          <div class="service__provider-avatar">B</div>
+          <span>Beatrice Conti · external therapist</span>
+        </div>
+        <div class="service__dates">
+          <div class="service__dates-lbl">Next available</div>
+          <div class="service__date-pills">
+            <span class="date-pill">Di 12.5 <span class="date-pill__count">2</span></span>
+            <span class="date-pill">Di 26.5 <span class="date-pill__count">3</span></span>
+          </div>
+        </div>
+        <div class="service__cta">
+          <span class="service__rules">72 h notice</span>
+          <button class="btn btn--primary btn--sm">Book →</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Category 3: Veterinary & Transport -->
+  <section class="category">
+    <div class="category__head">
+      <h2 class="category__title">Veterinary &amp; Transport</h2>
+      <span class="category__count">2 services</span>
+    </div>
+    <div class="services">
+
+      <div class="service">
+        <div class="service__head">
+          <div class="service__name">Tierarzt-Begleitung</div>
+          <div>
+            <div class="service__price">45.—</div>
+            <span class="service__price-sub">+ vet fees</span>
+          </div>
+        </div>
+        <div class="service__desc">Wenn dein Pferd Routinetermin oder Impfung beim Hof-Tierarzt hat — wir holen, bringen und sind dabei. Wir buchen den Termin in deinem Namen.</div>
+        <div class="service__provider">
+          <div class="service__provider-avatar">B</div>
+          <span>Dr. T. Brunner · external vet</span>
+        </div>
+        <div class="service__dates">
+          <div class="service__dates-lbl">Next available</div>
+          <div class="service__date-pills">
+            <span class="date-pill">Mi 13.5 <span class="date-pill__count">3</span></span>
+            <span class="date-pill">Mi 27.5 <span class="date-pill__count">4</span></span>
+          </div>
+        </div>
+        <div class="service__cta">
+          <span class="service__rules">48 h notice · routine visits only</span>
+          <button class="btn btn--primary btn--sm">Book →</button>
+        </div>
+      </div>
+
+      <div class="service">
+        <div class="service__head">
+          <div class="service__name">Anhängertransport</div>
+          <div>
+            <div class="service__price">2.50</div>
+            <span class="service__price-sub">per km</span>
+          </div>
+        </div>
+        <div class="service__desc">Turnier, Klinik, Beritt-Pause, Sommerweide. Wir fahren dein Pferd. Maximaldistanz 200 km, Hin- und Rückfahrt berechnet.</div>
+        <div class="service__dates">
+          <div class="service__dates-lbl">Next available</div>
+          <div class="service__date-pills">
+            <span class="date-pill">Sa 9.5 <span class="date-pill__count">1</span></span>
+            <span class="date-pill">Sa 16.5 <span class="date-pill__count">1</span></span>
+            <span class="date-pill date-pill--more">+ on request →</span>
+          </div>
+        </div>
+        <div class="service__cta">
+          <span class="service__rules">72 h notice · request specific destination + time</span>
+          <button class="btn btn--primary btn--sm">Book →</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Bottom helper -->
+  <div class="bottom-note">
+    <svg class="ico bottom-note__icon"><use href="#i-info"/></svg>
+    <div>
+      <strong style="color: var(--ink-900);">Brauchst du etwas anderes?</strong> Wir bieten weitere Leistungen wie Notfall-Tierarzt, Spezial-Transporte oder Foaling-Begleitung — die buchst du nicht direkt online. <a href="#" style="color: var(--terracotta-600); text-decoration: none;">Schreib Anna eine Nachricht →</a>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>

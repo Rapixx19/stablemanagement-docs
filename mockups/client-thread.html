@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<title>Nachrichten · Familie Keller</title>
+<meta name="viewport" content="width=960, initial-scale=1">
+<link rel="stylesheet" href="_tokens.css">
+<style>
+  /* Client surface: 12-col, 960px max read width, single-pane (DESIGN.md "client density: medium").
+     Voice: warm, professional, NOT WhatsApp. No emoji picker, no GIF, no read-receipt theatre.
+     Messages are flat boxes with hairline borders, NOT chat bubbles. Just text + send. */
+  body { background: var(--paper); color: var(--ink-900); }
+
+  /* Top bar (client surface — slim, calm) */
+  .topbar {
+    border-bottom: 1px solid var(--ink-100);
+    background: var(--canvas);
+    padding: var(--space-4) var(--space-6);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .topbar__brand { display: flex; align-items: center; gap: var(--space-3); }
+  .topbar__plaque { width: 28px; height: 28px; border-radius: var(--radius-md); background: var(--clay-200); color: var(--terracotta-700); display: grid; place-items: center; font-family: var(--font-serif); font-weight: 600; font-size: var(--fs-sm); }
+  .topbar__name { font-family: var(--font-serif); font-size: var(--fs-md); font-weight: 500; }
+  .topbar__nav { display: flex; gap: var(--space-2); }
+  .topbar__link { font-size: var(--fs-sm); color: var(--ink-700); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); text-decoration: none; transition: background-color var(--m-tap); }
+  .topbar__link:hover { background: var(--paper); }
+  .topbar__link--active { color: var(--ink-900); background: var(--ink-100); font-weight: 500; }
+
+  /* Page layout */
+  .page { max-width: 960px; margin: 0 auto; padding: var(--space-6); }
+  .page-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-6); }
+  .page-title { font-size: var(--fs-xl); line-height: var(--lh-xl); font-weight: 500; letter-spacing: -0.01em; }
+  .page-sub { color: var(--ink-500); font-size: var(--fs-sm); margin-top: 2px; }
+
+  /* Two-pane: thread list + detail */
+  .layout { display: grid; grid-template-columns: 280px 1fr; gap: var(--space-6); align-items: start; }
+
+  /* Thread list */
+  .threads { background: var(--canvas); border: 1px solid var(--ink-100); border-radius: var(--radius-md); overflow: hidden; }
+  .threads__hdr { padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--ink-100); display: flex; justify-content: space-between; align-items: center; }
+  .threads__title { font-size: var(--fs-sm); color: var(--ink-700); }
+  .thread-item { padding: var(--space-3) var(--space-4); border-top: 1px solid var(--ink-100); cursor: pointer; transition: background-color var(--m-tap); }
+  .thread-item:first-of-type { border-top: 0; }
+  .thread-item:hover { background: var(--paper); }
+  .thread-item--active { background: var(--ink-100); }
+  .thread-item__top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-2); }
+  .thread-item__from { font-size: var(--fs-sm); font-weight: 500; }
+  .thread-item__date { font-size: var(--fs-xs); color: var(--ink-500); font-variant-numeric: tabular-nums; }
+  .thread-item__subject { font-size: var(--fs-sm); color: var(--ink-700); margin-top: 2px; }
+  .thread-item__excerpt { font-size: var(--fs-xs); color: var(--ink-500); margin-top: 4px; line-height: 16px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .thread-item__unread::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 999px; background: var(--terracotta-600); margin-right: var(--space-2); vertical-align: 1px; }
+
+  /* Thread detail */
+  .thread { background: var(--canvas); border: 1px solid var(--ink-100); border-radius: var(--radius-md); display: flex; flex-direction: column; min-height: 600px; }
+  .thread__hdr { padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--ink-100); display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); }
+  .thread__subject { font-family: var(--font-serif); font-size: var(--fs-lg); line-height: var(--lh-lg); font-weight: 500; }
+  .thread__meta { font-size: var(--fs-sm); color: var(--ink-500); margin-top: var(--space-1); }
+  .thread__meta a { color: var(--terracotta-600); text-decoration: none; }
+  .thread__meta a:hover { text-decoration: underline; }
+  .thread__actions { display: flex; gap: var(--space-2); }
+
+  /* Messages: flat boxes, hairline border, NOT bubbles */
+  .messages { padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); flex: 1; }
+  .msg { padding: var(--space-4) var(--space-6); border: 1px solid var(--ink-100); border-radius: var(--radius-md); background: var(--canvas); }
+  .msg--from-stable { background: var(--paper); border-color: var(--ink-100); }
+  .msg__hdr { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--space-3); }
+  .msg__from { font-size: var(--fs-sm); font-weight: 500; }
+  .msg__from--stable { color: var(--terracotta-700); }
+  .msg__date { font-size: var(--fs-xs); color: var(--ink-500); font-variant-numeric: tabular-nums; }
+  .msg__body { font-size: var(--fs-md); line-height: var(--lh-md); color: var(--ink-900); }
+  .msg__body p { margin-bottom: var(--space-3); }
+  .msg__body p:last-child { margin-bottom: 0; }
+  .msg__attachment { margin-top: var(--space-3); padding: var(--space-3); border: 1px solid var(--ink-100); border-radius: var(--radius-sm); background: var(--canvas); display: flex; align-items: center; gap: var(--space-3); }
+  .msg__attachment-icon { width: 32px; height: 32px; background: var(--ink-100); border-radius: var(--radius-sm); display: grid; place-items: center; color: var(--ink-500); flex: 0 0 auto; }
+  .msg__attachment-meta { flex: 1; min-width: 0; }
+  .msg__attachment-name { font-size: var(--fs-sm); color: var(--ink-900); }
+  .msg__attachment-size { font-size: var(--fs-xs); color: var(--ink-500); font-variant-numeric: tabular-nums; }
+  .msg__attachment-link { color: var(--terracotta-600); text-decoration: none; font-size: var(--fs-sm); }
+  .msg__attachment-link:hover { text-decoration: underline; }
+
+  /* Day separator */
+  .day-sep { display: flex; align-items: center; gap: var(--space-3); color: var(--ink-500); font-size: var(--fs-xs); padding: var(--space-2) 0; }
+  .day-sep::before, .day-sep::after { content: ""; flex: 1; height: 1px; background: var(--ink-100); }
+
+  /* Composer */
+  .composer { padding: var(--space-4) var(--space-6); border-top: 1px solid var(--ink-100); background: var(--canvas); border-radius: 0 0 var(--radius-md) var(--radius-md); }
+  .composer__field { width: 100%; min-height: 100px; max-height: 280px; resize: vertical; padding: var(--space-3); border: 1px solid var(--ink-100); border-radius: var(--radius-sm); font: inherit; font-size: var(--fs-md); line-height: var(--lh-md); color: var(--ink-900); background: var(--canvas); transition: border-color var(--m-tap); }
+  .composer__field::placeholder { color: var(--ink-500); }
+  .composer__field:focus { outline: 2px solid var(--terracotta-600); outline-offset: 2px; }
+  .composer__row { display: flex; align-items: center; justify-content: space-between; margin-top: var(--space-3); gap: var(--space-3); }
+  .composer__hint { font-size: var(--fs-xs); color: var(--ink-500); }
+  .composer__actions { display: flex; align-items: center; gap: var(--space-2); }
+
+  /* Pill primitive — onsite indicator */
+  .pill--reply { background: var(--ink-100); color: var(--ink-700); border-color: transparent; }
+
+  .ico { width: 18px; height: 18px; stroke-width: 1.5; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .ico-sm { width: 14px; height: 14px; stroke-width: 1.5; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+  @media (max-width: 767px) {
+    .layout { grid-template-columns: 1fr; }
+    .threads { display: none; }
+    .page { padding: var(--space-3); }
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M3 11l18-7-7 18-2-8z"/></symbol>
+    <symbol id="i-paperclip" viewBox="0 0 24 24"><path d="M21 11l-9 9a5 5 0 0 1-7-7l9-9a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3l7-7"/></symbol>
+    <symbol id="i-archive" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4"/><path d="M5 8v12h14V8M9 13h6"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h9l5 5v13H6z"/><path d="M14 3v6h6"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  </defs>
+</svg>
+
+<header class="topbar">
+  <div class="topbar__brand">
+    <div class="topbar__plaque">LF</div>
+    <div>
+      <div class="topbar__name">La Fattoria</div>
+      <div class="t-meta">Boxenmiete · Annika Keller</div>
+    </div>
+  </div>
+  <nav class="topbar__nav">
+    <a href="#" class="topbar__link">Übersicht</a>
+    <a href="#" class="topbar__link">Pferd</a>
+    <a href="#" class="topbar__link">Kalender</a>
+    <a href="#" class="topbar__link">Rechnungen</a>
+    <a href="#" class="topbar__link topbar__link--active">Nachrichten</a>
+  </nav>
+</header>
+
+<main class="page">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Nachrichten</h1>
+      <div class="page-sub">Direkter Kontakt mit der Stallleitung. Antwort meist innerhalb eines Werktags.</div>
+    </div>
+    <button class="btn btn--secondary btn--sm"><svg class="ico"><use href="#i-plus"/></svg> Neue Nachricht</button>
+  </header>
+
+  <div class="layout">
+
+    <aside class="threads" aria-label="Konversationen">
+      <div class="threads__hdr">
+        <span class="threads__title">3 Konversationen</span>
+        <span class="t-meta">2 ungelesen</span>
+      </div>
+
+      <article class="thread-item thread-item--active">
+        <div class="thread-item__top">
+          <span class="thread-item__from thread-item__unread">Anna Frei</span>
+          <span class="thread-item__date">vor 2 Std.</span>
+        </div>
+        <div class="thread-item__subject">Frühlingsweide ab 12. Mai</div>
+        <div class="thread-item__excerpt">Ja, gerne. Diva könnte ab 12. Mai mit der Gruppe von Reihe A auf die obere Weide.</div>
+      </article>
+
+      <article class="thread-item">
+        <div class="thread-item__top">
+          <span class="thread-item__from thread-item__unread">Anna Frei</span>
+          <span class="thread-item__date">28.04.</span>
+        </div>
+        <div class="thread-item__subject">Tierarzt-Termin Diva</div>
+        <div class="thread-item__excerpt">Dr. Brunner kommt am Donnerstag um 09:00. Bitte halten Sie Diva trocken in der Box.</div>
+      </article>
+
+      <article class="thread-item">
+        <div class="thread-item__top">
+          <span class="thread-item__from">Anna Frei</span>
+          <span class="thread-item__date">15.04.</span>
+        </div>
+        <div class="thread-item__subject">Hufpflege im Mai</div>
+        <div class="thread-item__excerpt">Hr. Meier macht den Mai-Termin am 22. Mai zwischen 14 und 16 Uhr. Keine Anwesenheit nötig.</div>
+      </article>
+    </aside>
+
+    <section class="thread" aria-label="Konversation: Frühlingsweide ab 12. Mai">
+
+      <header class="thread__hdr">
+        <div>
+          <h2 class="thread__subject">Frühlingsweide ab 12. Mai</h2>
+          <div class="thread__meta">Mit <a href="#">Anna Frei</a> · zu <a href="#">Diva (Box A7)</a> · 4 Nachrichten</div>
+        </div>
+        <div class="thread__actions">
+          <button class="btn btn--ghost btn--sm" aria-label="Konversation archivieren"><svg class="ico"><use href="#i-archive"/></svg></button>
+        </div>
+      </header>
+
+      <div class="messages">
+
+        <div class="day-sep"><span>Mittwoch, 30. April 2026</span></div>
+
+        <article class="msg">
+          <div class="msg__hdr">
+            <span class="msg__from">Annika Keller</span>
+            <span class="msg__date">30.04.2026 · 18:42</span>
+          </div>
+          <div class="msg__body">
+            <p>Guten Abend Frau Frei,</p>
+            <p>nun, da das Wetter beständiger wird, frage ich mich, wann der erste Weidegang für die Reihe A geplant ist. Diva ist nach dem Winter sehr dringlich darauf.</p>
+            <p>Falls es eine Eingewöhnungsgruppe gibt, würde ich sie gerne mit anmelden.</p>
+            <p>Herzliche Grüsse<br>Annika Keller</p>
+          </div>
+        </article>
+
+        <div class="day-sep"><span>Donnerstag, 1. Mai 2026</span></div>
+
+        <article class="msg msg--from-stable">
+          <div class="msg__hdr">
+            <span class="msg__from msg__from--stable">Anna Frei · Stallleitung</span>
+            <span class="msg__date">01.05.2026 · 08:15</span>
+          </div>
+          <div class="msg__body">
+            <p>Guten Morgen Frau Keller,</p>
+            <p>schön, dass Sie fragen. Wir starten am Montag, 12. Mai, mit der Eingewöhnungsgruppe Reihe A. Drei Stunden täglich in der ersten Woche, danach schrittweise mehr.</p>
+            <p>Ich notiere Diva. Bitte beachten Sie unser kurzes Merkblatt zur Anweidezeit, das ich Ihnen mitschicke.</p>
+            <p>Beste Grüsse<br>Anna Frei</p>
+          </div>
+          <div class="msg__attachment">
+            <div class="msg__attachment-icon"><svg class="ico-sm"><use href="#i-doc"/></svg></div>
+            <div class="msg__attachment-meta">
+              <div class="msg__attachment-name">Merkblatt-Anweidezeit-2026.pdf</div>
+              <div class="msg__attachment-size">2 Seiten · 184 KB</div>
+            </div>
+            <a href="#" class="msg__attachment-link">Öffnen</a>
+          </div>
+        </article>
+
+        <article class="msg">
+          <div class="msg__hdr">
+            <span class="msg__from">Annika Keller</span>
+            <span class="msg__date">01.05.2026 · 12:08</span>
+          </div>
+          <div class="msg__body">
+            <p>Vielen Dank, das passt. Eine Frage noch: ist der Salzlecksein draussen vorhanden, oder soll ich einen mitbringen?</p>
+          </div>
+        </article>
+
+        <article class="msg msg--from-stable">
+          <div class="msg__hdr">
+            <span class="msg__from msg__from--stable">Anna Frei · Stallleitung</span>
+            <span class="msg__date">heute · 14:23</span>
+          </div>
+          <div class="msg__body">
+            <p>Salzlecksteine stehen wir bereits, an drei Stellen verteilt. Mitbringen ist nicht nötig.</p>
+            <p>Wir sehen uns am 12. Mai.</p>
+          </div>
+        </article>
+
+      </div>
+
+      <footer class="composer">
+        <label for="reply" class="t-meta" style="display: block; margin-bottom: var(--space-2);">Antwort an Anna Frei</label>
+        <textarea id="reply" class="composer__field" placeholder="Schreiben Sie Ihre Nachricht. Antwort kommt meist am nächsten Werktag." rows="4">Vielen Dank für die Auskunft, Frau Frei. Dann komme ich am 12. Mai gegen 16:30 zur Übergabe vorbei.
+
+Beste Grüsse,
+Annika</textarea>
+        <div class="composer__row">
+          <div class="composer__hint">Per Enter neue Zeile · ⌘ + Enter zum Senden</div>
+          <div class="composer__actions">
+            <button class="btn btn--ghost btn--sm" aria-label="Datei anhängen"><svg class="ico"><use href="#i-paperclip"/></svg> Anhang</button>
+            <button class="btn btn--primary btn--sm"><svg class="ico"><use href="#i-send"/></svg> Senden</button>
+          </div>
+        </div>
+      </footer>
+
+    </section>
+
+  </div>
+</main>
+
+</body>
+</html>

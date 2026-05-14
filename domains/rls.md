@@ -18,8 +18,10 @@ $$;
 
 create or replace function auth.current_role(p_stable_id uuid) returns text
 language sql stable as $$
+  -- highest privilege wins (owner > worker > client)
   select role from memberships
   where user_id = auth.uid() and stable_id = p_stable_id
+  order by array_position(ARRAY['owner','worker','client']::text[], role)
   limit 1;
 $$;
 ```
@@ -35,7 +37,7 @@ create policy horses_select on horses for select
 create policy horses_owner_write on horses for all
   using (
     stable_id in (select auth.current_stable_ids())
-    and auth.current_role(stable_id) in ('owner','manager')
+    and auth.current_role(stable_id) = 'owner'
   );
 ```
 
@@ -46,7 +48,7 @@ create policy horses_client_select on horses for select
   using (
     stable_id in (select auth.current_stable_ids())
     and (
-      auth.current_role(stable_id) in ('owner','manager','worker')
+      auth.current_role(stable_id) in ('owner','worker')
       or owner_person_id in (
         select id from people
         where user_id = auth.uid() and stable_id = horses.stable_id
@@ -92,11 +94,11 @@ File path convention: `{stable_id}/{horse_id}/{document_id}.{ext}`. The folder s
 
 ## Service-role escapes (rare, dangerous)
 
-The service role (used only in Railway crons and seed scripts) bypasses RLS. Three rules: never use it from a user-facing code path; pair every service-role query with an explicit `WHERE stable_id = $1`; comment every usage with `// service_role: reason`.
+The service role (used only in seed scripts and rare admin tools) bypasses RLS. Three rules: never use it from a user-facing code path; pair every service-role query with an explicit `WHERE stable_id = $1`; comment every usage with `// service_role: reason`. Vercel Cron route handlers run as authenticated server actions, not service role — they look up `stable_id` per row from the data they process.
 
 ## RLS test pattern
 
-Every table with `stable_id` has paired tests in `apps/owner/tests/rls/`:
+Every table with `stable_id` has paired tests in `apps/web/tests/rls/`:
 
 ```ts
 describe('horses RLS', () => {

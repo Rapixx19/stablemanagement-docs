@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<title>Abonnements zuweisen — Bulk Assign Wizard — /owner/billing/subscriptions/bulk-assign</title>
+<meta name="viewport" content="width=1280, initial-scale=1">
+<link rel="stylesheet" href="_tokens.css">
+<style>
+  body { background: var(--paper); margin: 0; font-family: var(--font-sans); color: var(--ink-900); }
+  .app { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; }
+  .rail { background: var(--canvas); border-right: 1px solid var(--ink-100); padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); }
+  .rail__brand { display: flex; align-items: center; gap: var(--space-3); padding-bottom: var(--space-4); border-bottom: 1px solid var(--ink-100); }
+  .rail__plaque { width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--clay-200); color: var(--terracotta-700); display: grid; place-items: center; font-family: var(--font-serif); font-weight: 600; }
+  .rail__name { font-family: var(--font-serif); font-size: var(--fs-lg); font-weight: 500; }
+  .rail__role { font-size: var(--fs-xs); color: var(--ink-500); }
+  .rail__item { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); color: var(--ink-700); font-size: var(--fs-md); }
+  .rail__item--active { background: var(--ink-100); color: var(--ink-900); font-weight: 500; }
+  .rail__icon { color: var(--ink-500); }
+  .ico { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .rail__item--active .ico { color: var(--terracotta-600); }
+
+  .main { padding: var(--space-6) var(--space-8); max-width: 1180px; }
+  .breadcrumb { font-size: var(--fs-sm); color: var(--ink-500); margin-bottom: var(--space-2); }
+  .breadcrumb a { color: var(--ink-500); text-decoration: none; }
+  .topbar__title { font-size: var(--fs-xl); font-weight: 500; letter-spacing: -0.01em; }
+  .topbar__sub { font-size: var(--fs-sm); color: var(--ink-500); margin-top: 2px; }
+
+  /* Step indicator */
+  .steps { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-4); margin: var(--space-6) 0 var(--space-8); }
+  .step { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border: 1px solid var(--ink-100); background: var(--canvas); }
+  .step--done { border-color: var(--moss-600); background: var(--moss-200); }
+  .step--active { border-color: var(--terracotta-600); }
+  .step__num { font-size: var(--fs-xs); color: var(--ink-500); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.04em; }
+  .step__title { font-size: var(--fs-md); font-weight: 500; margin-top: 2px; }
+  .step__sub { font-size: var(--fs-sm); color: var(--ink-500); margin-top: 2px; }
+  .step--done .step__num { color: var(--moss-600); }
+  .step--active .step__num { color: var(--terracotta-600); }
+
+  /* Review table */
+  .panel { background: var(--canvas); border: 1px solid var(--ink-100); border-radius: var(--radius-md); }
+  .panel__head { padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--ink-100); display: flex; justify-content: space-between; align-items: baseline; }
+  .panel__title { font-size: var(--fs-md); font-weight: 500; }
+  .panel__sub { font-size: var(--fs-sm); color: var(--ink-500); }
+
+  .table { width: 100%; border-collapse: collapse; }
+  .table th, .table td { padding: var(--space-3) var(--space-5); text-align: left; border-top: 1px solid var(--ink-100); font-size: var(--fs-sm); }
+  .table th { font-size: var(--fs-xs); color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.04em; font-weight: 500; border-top: 0; background: var(--paper); }
+  .table tr:first-child td { border-top: 0; }
+  .table td.num, .table th.num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .table tr.row--skipped { color: var(--ink-500); }
+  .table tr.row--skipped td:first-child { padding-left: var(--space-3); }
+
+  .check { width: 18px; height: 18px; border: 1.5px solid var(--ink-300); border-radius: 4px; display: inline-grid; place-items: center; cursor: default; vertical-align: middle; margin-right: var(--space-2); }
+  .check--on { background: var(--terracotta-600); border-color: var(--terracotta-600); color: var(--canvas); }
+  .check--on::after { content: '✓'; font-size: var(--fs-xs); }
+  .check--skipped { background: var(--ink-100); border-color: var(--ink-300); }
+
+  .input--inline { padding: 2px var(--space-2); border: 1px solid var(--ink-300); border-radius: var(--radius-sm); font-size: var(--fs-sm); width: 88px; text-align: right; font-family: var(--font-mono); }
+  .select--inline { padding: 2px var(--space-2); border: 1px solid var(--ink-300); border-radius: var(--radius-sm); font-size: var(--fs-sm); }
+
+  .pill--skipped { font-size: var(--fs-xs); padding: 1px var(--space-2); background: var(--ochre-200); color: var(--ochre-600); border-radius: 999px; }
+  .pill--replace { font-size: var(--fs-xs); padding: 1px var(--space-2); background: var(--clay-200); color: var(--terracotta-700); border-radius: 999px; }
+
+  .summary { padding: var(--space-4) var(--space-5); border-top: 1px solid var(--ink-100); display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: var(--space-4); align-items: center; background: var(--paper); border-radius: 0 0 var(--radius-md) var(--radius-md); }
+  .summary__stat { display: flex; flex-direction: column; gap: 2px; }
+  .summary__lbl { font-size: var(--fs-xs); color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.04em; }
+  .summary__val { font-size: var(--fs-lg); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+  .helper { padding: var(--space-3) var(--space-4); border: 1px dashed var(--ink-300); border-radius: var(--radius-sm); font-size: var(--fs-sm); color: var(--ink-700); background: var(--canvas); margin-bottom: var(--space-4); display: flex; gap: var(--space-3); align-items: flex-start; }
+  .helper__icon { color: var(--ink-500); margin-top: 2px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-money" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M12 16h.01"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <aside class="rail">
+    <div class="rail__brand"><div class="rail__plaque">LF</div><div><div class="rail__name">La Fattoria</div><div class="rail__role">Stallleitung · Anna Frei</div></div></div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-money"/></svg>Übersicht</div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-money"/></svg>Kalender</div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-money"/></svg>Pferde &amp; Boxen</div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-money"/></svg>Kunden</div>
+    <div class="rail__item rail__item--active"><svg class="ico rail__icon"><use href="#i-money"/></svg>Buchhaltung</div>
+  </aside>
+
+  <main class="main">
+    <div class="breadcrumb"><a href="#">Buchhaltung</a> · <a href="#">Abonnements</a> · Zuweisen</div>
+    <div class="topbar__title">Abonnements an mehrere Kunden zuweisen</div>
+    <div class="topbar__sub">2 Leistungen × 19 Kunden · 38 mögliche Paarungen</div>
+
+    <div class="steps">
+      <div class="step step--done"><div class="step__num">① Leistungen</div><div class="step__title">2 ausgewählt</div><div class="step__sub">Vollpension · Einstreu</div></div>
+      <div class="step step--done"><div class="step__num">② Kunden</div><div class="step__title">19 ausgewählt</div><div class="step__sub">Alle aktiven Kunden</div></div>
+      <div class="step step--active"><div class="step__num">③ Prüfung</div><div class="step__title">Übersicht &amp; Übersteuern</div><div class="step__sub">Zeile bestätigen oder überspringen</div></div>
+    </div>
+
+    <div class="helper">
+      <svg class="ico helper__icon"><use href="#i-info"/></svg>
+      <div>
+        3 Paarungen sind als <span class="pill--skipped">Wird übersprungen</span> markiert, weil bei diesen Kunden bereits ein aktives Abonnement für die Leistung läuft. Du kannst die Markierung entfernen, um stattdessen <span class="pill--replace">Ersetzen</span> zu wählen (altes Abo schliessen + neues anlegen, atomar).
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel__head">
+        <div>
+          <div class="panel__title">Prüfung</div>
+          <div class="panel__sub">38 Zeilen · 35 werden angelegt · 3 übersprungen</div>
+        </div>
+        <div style="font-size: var(--fs-sm); color: var(--ink-500);">Sortiert: Kunde A–Z</div>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width: 36px;"></th>
+            <th>Kunde</th>
+            <th>Pferd</th>
+            <th>Leistung</th>
+            <th class="num">Preis</th>
+            <th>Aktiv ab</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="check check--on"></span></td>
+            <td>Brunner, Marta</td>
+            <td><select class="select--inline"><option>Diva</option></select></td>
+            <td>Vollpension</td>
+            <td class="num"><input class="input--inline" value="950.00"/></td>
+            <td>01.06.2026</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><span class="check check--on"></span></td>
+            <td>Brunner, Marta</td>
+            <td><select class="select--inline"><option>Diva</option></select></td>
+            <td>Einstreu</td>
+            <td class="num"><input class="input--inline" value="80.00"/></td>
+            <td>01.06.2026</td>
+            <td>—</td>
+          </tr>
+          <tr class="row--skipped">
+            <td><span class="check check--skipped"></span></td>
+            <td>Frei, Anna</td>
+            <td>Akira</td>
+            <td>Vollpension</td>
+            <td class="num">950.00</td>
+            <td>01.06.2026</td>
+            <td><span class="pill--skipped">übersprungen · läuft seit 01.04.</span></td>
+          </tr>
+          <tr>
+            <td><span class="check check--on"></span></td>
+            <td>Keller, Familie</td>
+            <td><select class="select--inline"><option>Diva</option><option>Festival</option></select></td>
+            <td>Vollpension</td>
+            <td class="num"><input class="input--inline" value="950.00"/></td>
+            <td>01.06.2026</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><span class="check check--on"></span></td>
+            <td>Keller, Familie</td>
+            <td><select class="select--inline"><option>Diva</option><option>Festival</option></select></td>
+            <td>Einstreu</td>
+            <td class="num"><input class="input--inline" value="80.00"/></td>
+            <td>01.06.2026</td>
+            <td>—</td>
+          </tr>
+          <tr class="row--skipped">
+            <td><span class="check check--skipped"></span></td>
+            <td>Roth, Stefan</td>
+            <td>Festus</td>
+            <td>Einstreu</td>
+            <td class="num">80.00</td>
+            <td>01.06.2026</td>
+            <td><span class="pill--skipped">übersprungen · läuft seit 01.01.</span></td>
+          </tr>
+          <tr>
+            <td><span class="check check--on"></span></td>
+            <td>Solothurn, Reitverein</td>
+            <td>—</td>
+            <td>Vollpension</td>
+            <td class="num"><input class="input--inline" value="900.00"/></td>
+            <td>01.06.2026</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><span class="check check--on"></span></td>
+            <td>Zimmermann, Lukas</td>
+            <td><select class="select--inline"><option>Akira</option></select></td>
+            <td>Vollpension</td>
+            <td class="num"><input class="input--inline" value="950.00"/></td>
+            <td>01.06.2026</td>
+            <td>—</td>
+          </tr>
+          <tr style="color: var(--ink-500); font-style: italic;">
+            <td colspan="7" style="text-align: center; padding: var(--space-3);">… 30 weitere Zeilen …</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="summary">
+        <div class="summary__stat"><span class="summary__lbl">Wird angelegt</span><span class="summary__val">35</span></div>
+        <div class="summary__stat"><span class="summary__lbl">Übersprungen</span><span class="summary__val" style="color: var(--ochre-600);">3</span></div>
+        <div class="summary__stat"><span class="summary__lbl">Monatl. Summe</span><span class="summary__val">CHF 26'730.00</span></div>
+        <div style="display: flex; gap: var(--space-3);">
+          <button class="btn btn--ghost">Zurück</button>
+          <button class="btn btn--primary">35 Abonnements anlegen</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: var(--space-6); font-size: var(--fs-sm); color: var(--ink-500); display: flex; gap: var(--space-2); align-items: center;">
+      <svg class="ico" style="color: var(--ink-500);"><use href="#i-info"/></svg>
+      Eine Transaktion: alle 35 Zeilen oder keine. Bei Fehler bleibt der Stand unverändert; nochmaliges Anlegen produziert keine Duplikate (idempotenter Index auf person/service/active_from).
+    </div>
+  </main>
+</div>
+</body>
+</html>

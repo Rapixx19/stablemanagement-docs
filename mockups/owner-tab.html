@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<title>Klient-Tab — /owner/people/[id]/billing/tab — slice 06</title>
+<meta name="viewport" content="width=1280, initial-scale=1">
+<link rel="stylesheet" href="_tokens.css">
+<style>
+  body { background: var(--paper); margin: 0; font-family: var(--font-sans); color: var(--ink-900); }
+  .app { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; }
+  .rail { background: var(--canvas); border-right: 1px solid var(--ink-100); padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); }
+  .rail__brand { display: flex; align-items: center; gap: var(--space-3); padding-bottom: var(--space-4); border-bottom: 1px solid var(--ink-100); }
+  .rail__plaque { width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--clay-200); color: var(--terracotta-700); display: grid; place-items: center; font-family: var(--font-serif); font-weight: 600; }
+  .rail__name { font-family: var(--font-serif); font-size: var(--fs-lg); font-weight: 500; }
+  .rail__role { font-size: var(--fs-xs); color: var(--ink-500); }
+  .rail__item { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); color: var(--ink-700); font-size: var(--fs-md); }
+  .rail__item--active { background: var(--ink-100); color: var(--ink-900); font-weight: 500; }
+  .rail__item--active .ico { color: var(--terracotta-600); }
+  .rail__icon { color: var(--ink-500); }
+  .ico { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+  .main { padding: var(--space-6) var(--space-8); max-width: 1180px; }
+  .breadcrumb { font-size: var(--fs-sm); color: var(--ink-500); margin-bottom: var(--space-2); }
+  .breadcrumb a { color: var(--ink-500); text-decoration: none; }
+  .client-head { display: flex; gap: var(--space-4); align-items: center; padding-bottom: var(--space-4); border-bottom: 1px solid var(--ink-100); margin-bottom: var(--space-5); }
+  .client-avatar { width: 56px; height: 56px; border-radius: 50%; background: var(--clay-200); color: var(--terracotta-700); display: grid; place-items: center; font-size: var(--fs-md); font-weight: 600; font-family: var(--font-serif); }
+  .client-name { font-family: var(--font-serif); font-size: var(--fs-xl); font-weight: 500; }
+  .client-meta { font-size: var(--fs-sm); color: var(--ink-500); margin-top: 2px; }
+
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--ink-100); margin-bottom: var(--space-5); }
+  .tab { padding: var(--space-3) var(--space-4); font-size: var(--fs-md); color: var(--ink-700); border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: default; }
+  .tab--active { color: var(--ink-900); border-bottom-color: var(--terracotta-600); font-weight: 500; }
+
+  /* Period selector + total bar */
+  .total-bar { display: grid; grid-template-columns: auto 1fr auto; gap: var(--space-6); padding: var(--space-5); background: var(--canvas); border: 1px solid var(--ink-100); border-radius: var(--radius-md); margin-bottom: var(--space-5); align-items: center; }
+  .period { font-size: var(--fs-sm); color: var(--ink-500); }
+  .period__value { display: block; font-size: var(--fs-md); color: var(--ink-900); font-weight: 500; margin-top: 2px; }
+  .total { text-align: right; }
+  .total__lbl { font-size: var(--fs-xs); color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.04em; }
+  .total__value { font-size: var(--fs-2xl); line-height: var(--lh-2xl); font-weight: 500; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
+  .total__sub { font-size: var(--fs-sm); color: var(--ink-500); margin-top: 2px; }
+
+  /* Per-horse section */
+  .section { background: var(--canvas); border: 1px solid var(--ink-100); border-radius: var(--radius-md); margin-bottom: var(--space-4); overflow: hidden; }
+  .section__head { padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--ink-100); display: flex; justify-content: space-between; align-items: baseline; background: var(--paper); }
+  .section__horse { display: flex; align-items: center; gap: var(--space-3); }
+  .horse-avatar { width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--ink-100); color: var(--ink-700); display: grid; place-items: center; font-family: var(--font-serif); font-weight: 600; font-size: var(--fs-sm); }
+  .section__title { font-size: var(--fs-md); font-weight: 500; }
+  .section__sub { font-size: var(--fs-sm); color: var(--ink-500); margin-left: var(--space-3); }
+  .section__subtotal { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--fs-md); font-weight: 500; }
+
+  table.tbl { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+  table.tbl th, table.tbl td { padding: var(--space-2) var(--space-4); text-align: left; }
+  table.tbl tr { border-top: 1px solid var(--ink-100); }
+  table.tbl tr:first-child { border-top: 0; }
+  table.tbl th { font-weight: 500; color: var(--ink-500); font-size: var(--fs-xs); letter-spacing: 0.04em; text-transform: uppercase; }
+  table.tbl td.num, table.tbl th.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+  .origin-pill { font-size: var(--fs-xs); padding: 1px var(--space-2); border-radius: 999px; }
+  .origin-pill--sub { background: var(--clay-200); color: var(--terracotta-700); }
+  .origin-pill--one { background: var(--ink-100); color: var(--ink-500); }
+
+  .add-line { padding: var(--space-3) var(--space-5); border-top: 1px solid var(--ink-100); background: var(--paper); display: flex; gap: var(--space-3); align-items: center; }
+  .add-line__hint { font-size: var(--fs-sm); color: var(--ink-500); }
+  .quick-add { display: flex; gap: var(--space-2); flex-wrap: wrap; margin-bottom: var(--space-4); padding: var(--space-3); background: var(--canvas); border: 1px dashed var(--ink-300); border-radius: var(--radius-md); align-items: center; }
+  .quick-add__lbl { font-size: var(--fs-xs); color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.04em; margin-right: var(--space-2); }
+  .quick-add__pill { background: var(--ink-100); color: var(--ink-700); font-size: var(--fs-sm); padding: 2px var(--space-3); border-radius: 999px; cursor: default; }
+
+  /* Footer summary */
+  .vat-summary { padding: var(--space-4) var(--space-5); background: var(--canvas); border: 1px solid var(--ink-100); border-radius: var(--radius-md); display: grid; grid-template-columns: 1fr auto; gap: var(--space-4); }
+  .vat-table { font-size: var(--fs-sm); display: grid; grid-template-columns: 1fr auto auto auto; gap: 4px var(--space-4); align-items: center; }
+  .vat-table > div:nth-child(4n+3), .vat-table > div:nth-child(4n+4) { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+  .vat-table__lbl { color: var(--ink-500); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.04em; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h4v-6h6v6h4V10"/></symbol>
+    <symbol id="i-money" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-horse" viewBox="0 0 24 24"><path d="M5 21V11c0-2 1-4 4-4h6l3-3v6l3 3-3 1v3l-2 4M9 21v-5"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <aside class="rail">
+    <div class="rail__brand"><div class="rail__plaque">LF</div><div><div class="rail__name">La Fattoria</div><div class="rail__role">Anna Frei</div></div></div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-home"/></svg>Übersicht</div>
+    <div class="rail__item rail__item--active"><svg class="ico rail__icon"><use href="#i-users"/></svg>Kunden</div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-money"/></svg>Buchhaltung</div>
+  </aside>
+
+  <main class="main">
+    <div class="breadcrumb"><a href="#">Kunden</a> · Familie Keller · <strong style="color: var(--ink-900);">Abrechnung</strong></div>
+
+    <div class="client-head">
+      <div class="client-avatar">MK</div>
+      <div style="flex: 1;">
+        <div class="client-name">Familie Keller</div>
+        <div class="client-meta">2 Pferde · Sprache DE · Zahlungsziel 30 Tage · Bexio #B-3214 · Mitglied seit 01.08.2024</div>
+      </div>
+      <button class="btn btn--secondary btn--sm">Klient bearbeiten</button>
+    </div>
+
+    <div class="tabs">
+      <div class="tab">Abonnements</div>
+      <div class="tab tab--active">Aktuelles Tab</div>
+      <div class="tab">Rechnungen</div>
+    </div>
+
+    <div class="total-bar">
+      <div class="period">
+        <span>Periode</span>
+        <span class="period__value">Mai 2026 ▼</span>
+      </div>
+      <div></div>
+      <div class="total">
+        <div class="total__lbl">Gesamt inkl. MWST</div>
+        <div class="total__value">1'427.58</div>
+        <div class="total__sub">22 Positionen · 1'320.50 exkl. MWST + 107.08 MWST</div>
+      </div>
+    </div>
+
+    <div class="quick-add">
+      <span class="quick-add__lbl">Schnell hinzufügen</span>
+      <span class="quick-add__pill">+ Reitstunde 80.–</span>
+      <span class="quick-add__pill">+ Hufschmied 80.–</span>
+      <span class="quick-add__pill">+ Heuzuschlag 45.–</span>
+      <span class="quick-add__pill">+ Transport km</span>
+      <span class="quick-add__pill">+ Solarium 15.–</span>
+      <button class="btn btn--secondary btn--sm" style="margin-left: auto;"><svg class="ico"><use href="#i-plus"/></svg> Manuell</button>
+    </div>
+
+    <div class="section">
+      <div class="section__head">
+        <div class="section__horse">
+          <div class="horse-avatar">D</div>
+          <span class="section__title">Diva</span>
+          <span class="section__sub">Stute · 12 J · Box B7</span>
+        </div>
+        <div class="section__subtotal">912.50</div>
+      </div>
+      <table class="tbl">
+        <thead><tr><th>Datum</th><th>Beschreibung</th><th>Herkunft</th><th class="num">Menge</th><th class="num">Einzel</th><th class="num">MWST</th><th class="num">Summe</th></tr></thead>
+        <tbody>
+          <tr><td>01.05.</td><td>Vollpension Mai</td><td><span class="origin-pill origin-pill--sub">Abo</span></td><td class="num">1</td><td class="num">950.00</td><td class="num">8.1 %</td><td class="num">827.50</td></tr>
+          <tr><td>12.05.</td><td>Reitstunde — Rita</td><td><span class="origin-pill origin-pill--one">Einzel</span></td><td class="num">1</td><td class="num">80.00</td><td class="num">8.1 %</td><td class="num">85.00</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section__head">
+        <div class="section__horse">
+          <div class="horse-avatar">F</div>
+          <span class="section__title">Festival</span>
+          <span class="section__sub">Wallach · 8 J · Box C3</span>
+        </div>
+        <div class="section__subtotal">375.00</div>
+      </div>
+      <table class="tbl">
+        <thead><tr><th>Datum</th><th>Beschreibung</th><th>Herkunft</th><th class="num">Menge</th><th class="num">Einzel</th><th class="num">MWST</th><th class="num">Summe</th></tr></thead>
+        <tbody>
+          <tr><td>01.05.</td><td>Halbpension Mai</td><td><span class="origin-pill origin-pill--sub">Abo</span></td><td class="num">1</td><td class="num">720.00</td><td class="num">8.1 %</td><td class="num">313.20</td></tr>
+          <tr><td>08.05.</td><td>Heuzuschlag</td><td><span class="origin-pill origin-pill--one">Einzel</span></td><td class="num">1</td><td class="num">45.00</td><td class="num">2.6 %</td><td class="num">42.60</td></tr>
+          <tr><td>22.05.</td><td>Beritt Mai (3×)</td><td><span class="origin-pill origin-pill--sub">Abo</span></td><td class="num">3</td><td class="num">65.00</td><td class="num">8.1 %</td><td class="num">19.20</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section__head">
+        <div class="section__horse">
+          <span class="section__title" style="margin-left: 0;">Klient-Ebene (kein Pferd)</span>
+        </div>
+        <div class="section__subtotal">140.00</div>
+      </div>
+      <table class="tbl">
+        <thead><tr><th>Datum</th><th>Beschreibung</th><th>Herkunft</th><th class="num">Menge</th><th class="num">Einzel</th><th class="num">MWST</th><th class="num">Summe</th></tr></thead>
+        <tbody>
+          <tr><td>15.05.</td><td>Transport CSI Avenches</td><td><span class="origin-pill origin-pill--one">Einzel</span></td><td class="num">85</td><td class="num">2.50</td><td class="num">8.1 %</td><td class="num">140.00</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="vat-summary">
+      <div>
+        <div class="vat-table__lbl" style="grid-column: span 4; margin-bottom: var(--space-2);">MWST-Aufschlüsselung</div>
+        <div class="vat-table">
+          <div>STD 8.1 %</div><div>4 Positionen</div><div>1'248.20</div><div>+ 101.10</div>
+          <div>RED 2.6 %</div><div>1 Position</div><div>42.60</div><div>+ 1.11</div>
+          <div style="font-weight: 500; padding-top: var(--space-2); border-top: 1px solid var(--ink-100);">Total</div>
+          <div></div>
+          <div style="font-weight: 500; padding-top: var(--space-2); border-top: 1px solid var(--ink-100);">1'290.80</div>
+          <div style="font-weight: 500; padding-top: var(--space-2); border-top: 1px solid var(--ink-100);">+ 107.08</div>
+        </div>
+      </div>
+      <div>
+        <button class="btn btn--primary">Rechnungsentwurf erstellen</button>
+        <div style="font-size: var(--fs-xs); color: var(--ink-500); margin-top: var(--space-2); text-align: right;">Auto-Bill: ein · nächste Periode</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+</body>
+</html>

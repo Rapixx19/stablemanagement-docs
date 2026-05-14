@@ -73,7 +73,18 @@ Radius: `radius-sm` (4) for inputs, `radius-md` (8) for cards, `radius-lg` (12) 
 
 Owner desktop: 12-column grid, 24px gutter, 1280px max content width with two-pane layouts where the left pane is fixed 320px navigation rail. Client desktop: same 12-col, single-pane, 960px max read width. Worker mobile: single column, 16px page padding, full-bleed cards on small screens.
 
-Breakpoints: `sm 640` `md 768` `lg 1024` `xl 1280`. Worker only renders the `sm`/`md` versions; owner only renders `lg`/`xl`; client renders all.
+Breakpoints: `sm 640` `md 768` `lg 1024` `xl 1280`. **Owner renders all viewports** (DES-LOCK-2, 2026-05-07). Worker renders `sm`/`md` only. Client renders all.
+
+Owner viewport behavior:
+- **xl (≥1280)** — 12-col, 1280px max, 320px fixed nav rail, 24px gutters.
+- **lg (1024–1279)** — same as xl; 320px nav rail, 24px gutters.
+- **md (768–1023)**, tablet — nav rail collapses to a 56px icon rail; 12-col reflows to 8-col with 16px gutters; KPI row reflows 4-across → 2×2 stacked.
+- **sm (375–767)**, mobile — bottom tab bar replaces nav rail (4 items max: Übersicht · Stall · Tagebuch · Mehr); full-bleed cards; edit flows open as drawer-from-bottom; KPI row stacks to a single column.
+
+**DES-LOCK-3 (2026-05-14): Desktop-only surfaces.** Some owner surfaces are grid-heavy or planning-dense and don't fit at `sm`. These render at `md` (≥768px) and above only; at `sm` they show a polite redirect ("auf einem grösseren Bildschirm öffnen"). Current list:
+- `/owner/ops` (slice 15 ops calendar — 5 workers × 7 days grid)
+
+Future additions to this list go in `DECISIONS.md` and `slices/*` acceptance criteria. Default expectation remains DES-LOCK-2 (owner renders all viewports); desktop-only is the exception, not the rule.
 
 ## Motion
 
@@ -97,6 +108,9 @@ Defined in `packages/ui/primitives/`. Slices may compose, never re-skin.
 - `Pill` — status chips: `paid` (moss), `overdue` (ochre), `draft` (ink-300), `sent` (ink-500), `cancelled` (rust outline only).
 - `EmptyState` — illustration slot + headline + body + primary action. Never "No items found." See empty-state spec below.
 - `Toast` — top-right desktop, top mobile. Auto-dismiss 4s default, 8s for warnings, sticky for errors with retry.
+- `ConfirmDialog` — title + body + destructive CTA + cancel CTA. Focus trap defaults to cancel. Escape closes. Max-width 480px. `radius-lg`, single soft shadow.
+- `DataTable` — column headers, sortable, tabular-nums right-aligned for numeric columns, keyboard row select. Owner desktop primary; reflows to stacked card rows at `sm`.
+- `PreviewPane` — collapsible side pane (slice 08 invoice draft). Defaults open on desktop (`lg`/`xl`), closed on tablet (`md`), drawer-from-bottom on `sm`. Single soft shadow when open, none when collapsed.
 
 Cards earn their existence. If the only thing inside a card is a label + a number, it's not a card — it's a stat. Reach for `Card` only when the unit is a meaningful boundary (one invoice, one horse, one task).
 
@@ -125,7 +139,15 @@ Every list, table, and async region specifies all four:
 
 ## Imagery
 
-No stock photos. No horse-running-on-beach. The product never ships marketing imagery in the app surface. Stable logo upload is the only customer-side image; it sits in a `radius-md` mask at 48px in nav, 96px on invoice header.
+No stock photos. No horse-running-on-beach. The product never ships marketing imagery in the app surface.
+
+**Customer-uploaded imagery is allowed in three defined contexts** (decision 2026-05-14):
+
+1. **Stable logo** — `radius-md` mask, 48px in nav, 96px on invoice header.
+2. **Horse photos on the horse profile** — `radius-md` mask, customer-uploaded, max 6 per horse, 1 marked primary. Slice 01 already specs the storage; the profile surface is where they render.
+3. **"Recently active horses" strip on the owner dashboard** — horizontal photo strip of 6–8 horses with subtle sparkline-of-recent-activity underneath. Uses each horse's `is_primary` photo. Calm, not Instagram-like — square crops, hairline border, no shadows or gradients.
+
+Anything outside these three contexts (hero illustrations, horse-running-on-beach stock, decorative paw prints, country-side photos) is forbidden.
 
 ## Accessibility
 

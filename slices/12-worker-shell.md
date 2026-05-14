@@ -16,6 +16,15 @@ Marco the groom can install the web app to his phone home screen, log in with ma
 4. **Onboarding consent step.** First login as a worker presents a one-screen consent: "This app records your shifts and clock-in times. Geofence verifies you're on-site at the stable. We do not store raw GPS coordinates. Click I understand to continue." DE/FR/IT. Persisted in `worker_consent` table.
 5. **Bottom tab bar** with Home / Schedule / Tasks / Chat. Active state. Safe-area inset support (iOS).
 6. **PWA install** scoped to `/worker/*`. Manifest at `/worker/manifest.webmanifest` with `scope: /worker/`, `start_url: /worker/home`, `display: standalone`, `name: "Stable Crew"`, `theme_color`, `background_color`, full icon set (192/256/384/512 + maskable). Service worker registered only inside the `/worker/*` tree so it cannot interfere with `/owner` or `/client`. Android Chrome shows the native install prompt; we surface our own button as a fallback.
+
+   **Web Share Target** — owner-tree manifest at `/owner/manifest.webmanifest` registers the app as a share target so PDFs / images shared from any other app on Android (and iOS Safari when supported) land in `/owner/inbox/share-receive`, which routes them through the document ingestion pipeline (`domains/document-ingestion.md`). Manifest fragment:
+   ```json
+   "share_target": {
+     "action": "/owner/inbox/share-receive",
+     "method": "POST", "enctype": "multipart/form-data",
+     "params": { "files": [{ "name": "files", "accept": ["application/pdf","image/*"] }] }
+   }
+   ```
 7. **iOS install instructions screen.** iOS Safari does not fire `beforeinstallprompt` — users must tap Share → Add to Home Screen manually. We detect iOS Safari and show a one-screen tutorial with arrows pointing at the Share icon, three labelled steps, all in DE/FR/IT. Dismissable with "I've installed it / Skip for now". Re-shown on next session if not dismissed-as-installed. Verified on iOS 16, 17, 18 in BrowserStack before pilot.
 8. **Push notifications** stubbed for V2 (web push requires HTTPS + browser permission flow; we ship a banner instead in V1: "open the app to see new tasks").
 
@@ -39,7 +48,7 @@ create table worker_consent (
 
 ## RLS
 
-- `worker_consent`: a worker can SELECT their own; owner/manager can SELECT all in stable
+- `worker_consent`: a worker can SELECT their own; owner can SELECT all in stable
 - Membership check on every server action: `requireWorkerMembership(ctx, stableId)`
 
 ## Mobile-first design notes

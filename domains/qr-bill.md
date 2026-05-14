@@ -86,7 +86,7 @@ Same data, three texts. The bottom QR slip is library-rendered.
 
 ## Performance
 
-Target: < 3s p95, < 8s p99. The PDF library is fast; bottleneck is font loading. Cache fonts in memory across invocations (Vercel Edge Function with `regional` execution).
+Target: < 3s p95, < 8s p99. The PDF library is fast; bottleneck is font loading. Runs on **Vercel Fluid Compute Node 24** (per `DECISIONS.md` D4) — Fluid Compute reuses instances across concurrent requests, so the font cache persists in module scope and avoids per-invocation reload. Edge runtime is not an option: `react-pdf` and `pdfkit` need Node APIs.
 
 ## Common pitfalls
 

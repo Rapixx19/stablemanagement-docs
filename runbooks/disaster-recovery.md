@@ -32,13 +32,13 @@ If any step fails, halt pilot and fix.
 
 ### Procedure
 
-1. **Stop writes immediately**: enable maintenance banner on all 3 apps (`MAINTENANCE_MODE=true` env var). Existing reads continue, writes return 503.
+1. **Stop writes immediately**: enable maintenance banner via `MAINTENANCE_MODE=true` Vercel env var on the single app. Existing reads continue, writes return 503.
 2. **Diagnose scope**: which table? since when? which `stable_id`s affected?
 3. **Decide PITR target**: latest known-good time, before corruption began.
 4. **Communicate to affected stables**: in-app banner + email. "We are restoring data; service will resume in <X> minutes."
 5. **Execute PITR**: Supabase dashboard or CLI. Restore goes to a new project.
 6. **Verify**: integrity SQL on the restored project.
-7. **Cut over**: update Vercel/Railway env vars to new project URLs. Redeploy.
+7. **Cut over**: update Vercel env vars (`SUPABASE_DB_POOLER_URL`, `SUPABASE_DB_DIRECT_URL`, `NEXT_PUBLIC_SUPABASE_URL`) to new project. Redeploy.
 8. **Re-enable writes**: clear maintenance mode.
 9. **Post-mortem**: required, in `docs/post-mortems/YYYY-MM-DD-...md`.
 
@@ -64,13 +64,13 @@ Mitigation: nightly Storage manifest snapshot to S3 Glacier (V1.1) — we know w
 
 ### Symptoms
 
-- All 3 apps return 503 / DNS errors
+- App returns 503 / DNS errors on `app.lafattoria.app`
 - Vercel status page shows incident
 
 ### Procedure
 
 1. Check Vercel status. If global outage, wait — we have no failover in V1.
-2. Communicate via Twitter/email to affected stables
+2. Communicate via email to affected stables
 3. Vercel typically resolves within < 1 hour
 4. No data loss; just downtime
 
@@ -85,7 +85,7 @@ V1.1 fallback plan: deploy parallel infrastructure on Cloudflare Pages with manu
 
 ### Procedure
 
-1. Maintenance banner up
+1. Maintenance banner up (`MAINTENANCE_MODE=true` Vercel env)
 2. Wait — no failover in V1 since auth + DB + storage all on Supabase
 3. Communicate to stables
 
@@ -110,7 +110,7 @@ V1.1 plan: separate auth from DB so partial outages can be handled. Out of V1 sc
 
 **P0 — worst possible.** Customer A sees Customer B's data.
 
-1. Take affected apps offline (maintenance mode)
+1. Take app offline (`MAINTENANCE_MODE=true`)
 2. Identify the leak: query, table, data leaked, to whom
 3. Fix the RLS policy
 4. Add the missing test

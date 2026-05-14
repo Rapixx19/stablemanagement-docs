@@ -43,7 +43,7 @@ create table messages (
   stable_id uuid not null references stables(id),
   thread_id uuid not null references message_threads(id),
   sender_user_id uuid not null references auth.users(id),
-  sender_role text not null check (sender_role in ('owner','manager','worker','client')),
+  sender_role text not null check (sender_role in ('owner','worker','client')),
   body text not null,
   horse_id uuid references horses(id),        -- optional per-horse tag
   attachment_path text,
@@ -79,6 +79,16 @@ create table broadcasts (
 - Supabase Realtime subscription on `messages` table per thread. UI updates without refresh.
 - Unread-count update via Postgres trigger on insert.
 
+## RLS
+
+All three tables scoped by `stable_id` per `domains/rls.md`.
+
+- `message_threads`, `messages`, `broadcasts`: `owner` full access.
+- `client`: SELECT and INSERT on `messages` for threads where `message_threads.person_id = (people row WHERE user_id = auth.uid())`. SELECT on their own `message_threads` only. **No access to `broadcasts`** — clients receive broadcasts as email; the in-app surface is owner-only.
+- `worker`: **no access** in V1 — comms is owner↔client only. SELECT/INSERT/UPDATE/DELETE all denied on all three tables. V1.1 candidate: separate worker↔owner barn-chat channel on a new schema.
+- **Sender attribution**: `messages.sender_user_id` enforced equal to `auth.uid()` via `WITH CHECK` on the INSERT policy. No spoofing.
+- **Cross-thread guard**: `messages.thread_id` must reference a `message_threads` row in the same `stable_id` as the inserter — server-action validates before INSERT (RLS alone permits any thread in the user's tenant).
+
 ## Acceptance criteria
 
 - [ ] Owner sends message to client; client receives email + sees in-app within 2s
@@ -89,6 +99,10 @@ create table broadcasts (
 - [ ] Email landing page deep-links back to the thread (auto-login via signed token)
 - [ ] Read receipts: thread `unread_count` decrements when client opens thread
 - [ ] DE/FR/IT email templates render correctly per recipient
+- [ ] **Worker SELECT on `messages` denied** by RLS
+- [ ] **Worker INSERT on `messages` denied** by RLS
+- [ ] **Sender spoofing**: client INSERT with `sender_user_id != auth.uid()` rejected by WITH CHECK
+- [ ] **Cross-thread leak**: client A cannot INSERT a message into client B's thread (same stable, different `person_id`)
 
 ## Acceptance integration test
 

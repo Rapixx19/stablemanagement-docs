@@ -60,6 +60,12 @@ total_incl_vat_cents = sum(line_incl_vat_cents)
 
 **Bankers' rounding** (round-half-to-even) reduces drift. JS doesn't have it built in; use `Math.round` with adjustment or import from `decimal.js`. See `packages/lib/billing/round.ts`.
 
+### vat_rates lookup is a one-shot read at line creation
+
+`vat_rates` table is the source of truth for "what is the standard rate today?". The lookup happens **once, at line creation time** (slice 06 mobile quick-add, bulk-assign, monthly subscription materialisation cron). The looked-up rate is **frozen onto the row** as `vat_rate_at_creation`. After that, the VAT computation reads the frozen rate from the row — never re-queries `vat_rates`.
+
+Why: a VAT rate hike mid-period must NOT retroactively change in-flight tab lines. Per CEO EDGE-2.
+
 ## VAT registration threshold
 
 Stables with annual revenue ≥ CHF 100k must register for VAT. La Fattoria with ~CHF 240k/yr is comfortably over. UI prompts during onboarding: "annual revenue?" → if < 100k, allow `vat_method = 'not_registered'` (V1.1, deferred).

@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Horse Profile — Diva</title>
+<meta name="viewport" content="width=1280, initial-scale=1">
+<link rel="stylesheet" href="_tokens.css">
+<style>
+  body { background: var(--paper); margin: 0; font-family: var(--font-sans); color: var(--ink-900); }
+  .app { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; }
+  .rail { background: var(--canvas); border-right: 1px solid var(--ink-100); padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); }
+  .rail__brand { display: flex; align-items: center; gap: var(--space-3); padding-bottom: var(--space-4); border-bottom: 1px solid var(--ink-100); }
+  .rail__plaque { width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--clay-200); color: var(--terracotta-700); display: grid; place-items: center; font-family: var(--font-serif); font-weight: 600; }
+  .rail__name { font-family: var(--font-serif); font-size: var(--fs-lg); font-weight: 500; }
+  .rail__role { font-size: var(--fs-xs); color: var(--ink-500); }
+  .rail__item { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); color: var(--ink-700); font-size: var(--fs-md); }
+  .rail__item--active { background: var(--ink-100); color: var(--ink-900); font-weight: 500; }
+  .rail__item--active .ico { color: var(--terracotta-600); }
+  .rail__icon { color: var(--ink-500); }
+  .ico { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+  .main { padding: var(--space-6) var(--space-8); max-width: 1280px; }
+  .breadcrumb { font-size: var(--fs-sm); color: var(--ink-500); margin-bottom: var(--space-3); }
+  .breadcrumb a { color: var(--ink-500); text-decoration: none; }
+
+  /* Horse hero: large primary photo + name */
+  .hero { display: grid; grid-template-columns: 320px 1fr auto; gap: var(--space-6); margin-bottom: var(--space-6); align-items: stretch; }
+  .hero__photo { aspect-ratio: 1; border-radius: var(--radius-md); background: var(--clay-200); display: grid; place-items: center; font-family: var(--font-serif); font-weight: 500; color: var(--terracotta-700); font-size: 64px; position: relative; overflow: hidden; }
+  .hero__photo-strip { position: absolute; bottom: var(--space-2); left: var(--space-2); display: flex; gap: 4px; }
+  .hero__photo-thumb { width: 36px; height: 36px; border-radius: var(--radius-sm); background: var(--canvas); border: 2px solid var(--canvas); display: grid; place-items: center; font-family: var(--font-serif); font-size: var(--fs-sm); color: var(--ink-700); }
+  .hero__photo-thumb--active { border-color: var(--terracotta-600); }
+  .hero__body { display: flex; flex-direction: column; justify-content: space-between; padding: var(--space-2) 0; }
+  .hero__name { font-family: var(--font-serif); font-size: var(--fs-2xl); line-height: var(--lh-2xl); font-weight: 500; letter-spacing: -0.02em; margin-bottom: var(--space-2); }
+  .hero__breed { font-size: var(--fs-md); color: var(--ink-700); margin-bottom: var(--space-4); }
+  .hero__chips { display: flex; gap: var(--space-2); flex-wrap: wrap; margin-bottom: var(--space-4); }
+  .chip { padding: var(--space-1) var(--space-3); border: 1px solid var(--ink-300); border-radius: 999px; font-size: var(--fs-sm); color: var(--ink-700); }
+  .chip--moss { background: var(--moss-200); color: var(--moss-600); border-color: var(--moss-200); }
+  .chip--ochre { background: var(--ochre-200); color: var(--ochre-600); border-color: var(--ochre-200); }
+  .hero__meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
+  .hero__meta-item { font-size: var(--fs-sm); }
+  .hero__meta-lbl { font-size: var(--fs-xs); color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+  .hero__meta-val { color: var(--ink-900); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .hero__actions { display: flex; flex-direction: column; gap: var(--space-3); justify-content: flex-start; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--ink-100); margin-bottom: var(--space-6); }
+  .tab { padding: var(--space-3) var(--space-4); font-size: var(--fs-md); color: var(--ink-700); border-bottom: 2px solid transparent; margin-bottom: -1px; display: flex; align-items: center; gap: var(--space-2); }
+  .tab__count { font-size: var(--fs-xs); color: var(--ink-500); padding: 1px var(--space-2); background: var(--ink-100); border-radius: 999px; font-family: var(--font-mono); }
+  .tab--active { color: var(--ink-900); border-bottom-color: var(--terracotta-600); font-weight: 500; }
+
+  /* Search */
+  .search-bar { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border: 1px solid var(--ink-300); border-radius: var(--radius-md); background: var(--canvas); margin-bottom: var(--space-5); }
+  .search-bar input { flex: 1; border: 0; outline: 0; background: transparent; font-size: var(--fs-md); color: var(--ink-900); font-family: inherit; }
+  .search-bar input::placeholder { color: var(--ink-500); }
+  .search-bar__hint { font-size: var(--fs-xs); color: var(--ink-500); font-family: var(--font-mono); }
+
+  /* Grid */
+  .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--space-5); }
+  .col-7 { grid-column: span 7; }
+  .col-5 { grid-column: span 5; }
+  .col-12 { grid-column: span 12; }
+
+  .card { background: var(--canvas); border: 1px solid var(--ink-100); border-radius: var(--radius-md); padding: var(--space-5); }
+  .card__head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--space-4); }
+  .card__title { font-size: var(--fs-md); font-weight: 500; }
+  .card__link { font-size: var(--fs-sm); color: var(--terracotta-600); text-decoration: none; }
+
+  /* Documents grid */
+  .docs { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+  .doc { display: grid; grid-template-columns: 40px 1fr auto; gap: var(--space-3); align-items: center; padding: var(--space-3); border: 1px solid var(--ink-100); border-radius: var(--radius-sm); }
+  .doc__icon { width: 40px; height: 40px; background: var(--ink-100); border-radius: var(--radius-sm); display: grid; place-items: center; color: var(--ink-500); }
+  .doc__name { font-size: var(--fs-sm); font-weight: 500; }
+  .doc__meta { font-size: var(--fs-xs); color: var(--ink-500); margin-top: 2px; font-family: var(--font-mono); }
+  .doc__expiry { font-size: var(--fs-xs); }
+  .doc__expiry--warn { color: var(--ochre-600); }
+  .doc__expiry--ok { color: var(--ink-500); }
+  .doc__expiry--late { color: var(--rust-600); }
+
+  /* Health timeline */
+  .health { display: flex; flex-direction: column; gap: 0; }
+  .health__row { display: grid; grid-template-columns: 96px 16px 1fr auto; gap: var(--space-3); padding: var(--space-3) 0; border-bottom: 1px solid var(--ink-100); align-items: start; }
+  .health__row:last-child { border-bottom: 0; }
+  .health__date { font-size: var(--fs-xs); color: var(--ink-500); font-family: var(--font-mono); padding-top: 2px; }
+  .health__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-300); margin-top: 6px; justify-self: center; }
+  .health__dot--moss { background: var(--moss-600); }
+  .health__dot--terr { background: var(--terracotta-600); }
+  .health__title { font-size: var(--fs-sm); font-weight: 500; }
+  .health__sub { font-size: var(--fs-xs); color: var(--ink-500); margin-top: 2px; }
+  .health__amount { font-size: var(--fs-xs); color: var(--ink-500); font-family: var(--font-mono); }
+
+  /* Schedule strip */
+  .schedule-strip { display: grid; grid-template-columns: repeat(7, 1fr); gap: var(--space-2); margin-bottom: var(--space-3); }
+  .day { padding: var(--space-2); border: 1px solid var(--ink-100); border-radius: var(--radius-sm); min-height: 80px; display: flex; flex-direction: column; gap: 4px; }
+  .day--today { background: var(--paper); border-color: var(--terracotta-600); }
+  .day__lbl { font-size: var(--fs-xs); color: var(--ink-500); font-family: var(--font-mono); }
+  .day__num { font-size: var(--fs-md); font-weight: 500; }
+  .day__event { font-size: var(--fs-xs); padding: 2px var(--space-2); border-radius: var(--radius-sm); background: var(--clay-200); color: var(--terracotta-700); }
+  .day__event--ink { background: var(--ink-100); color: var(--ink-700); }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h4v-6h6v6h4V10"/></symbol>
+    <symbol id="i-horse" viewBox="0 0 24 24"><path d="M5 21V11c0-2 1-4 4-4h6l3-3v6l3 3-3 1v3l-2 4M9 21v-5"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></symbol>
+    <symbol id="i-money" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <aside class="rail">
+    <div class="rail__brand"><div class="rail__plaque">LF</div><div><div class="rail__name">La Fattoria</div><div class="rail__role">Anna Frei</div></div></div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-home"/></svg>Overview</div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-users"/></svg>Clients</div>
+    <div class="rail__item rail__item--active"><svg class="ico rail__icon"><use href="#i-horse"/></svg>Horses &amp; Stalls</div>
+    <div class="rail__item"><svg class="ico rail__icon"><use href="#i-money"/></svg>Accounting</div>
+  </aside>
+
+  <main class="main">
+    <div class="breadcrumb"><a href="#">Horses</a> · <strong style="color: var(--ink-900);">Diva</strong></div>
+
+    <div class="hero">
+      <div class="hero__photo">D
+        <div class="hero__photo-strip">
+          <div class="hero__photo-thumb hero__photo-thumb--active">1</div>
+          <div class="hero__photo-thumb">2</div>
+          <div class="hero__photo-thumb">3</div>
+          <div class="hero__photo-thumb">4</div>
+          <div class="hero__photo-thumb">+</div>
+        </div>
+      </div>
+      <div class="hero__body">
+        <div>
+          <div class="hero__name">Diva</div>
+          <div class="hero__breed">Holsteiner mare · 12 years</div>
+          <div class="hero__chips">
+            <span class="chip chip--moss">Active</span>
+            <span class="chip">Stall B7</span>
+            <span class="chip">Owner: Marta Keller</span>
+            <span class="chip">Full board</span>
+            <span class="chip chip--ochre">Insurance renewal in 18 days</span>
+          </div>
+        </div>
+        <div class="hero__meta">
+          <div class="hero__meta-item"><div class="hero__meta-lbl">UELN</div><div class="hero__meta-val">CHE40012345678</div></div>
+          <div class="hero__meta-item"><div class="hero__meta-lbl">Microchip</div><div class="hero__meta-val">756000114521033</div></div>
+          <div class="hero__meta-item"><div class="hero__meta-lbl">FEI passport</div><div class="hero__meta-val">SUI40278</div></div>
+          <div class="hero__meta-item"><div class="hero__meta-lbl">Height</div><div class="hero__meta-val">166 cm</div></div>
+          <div class="hero__meta-item"><div class="hero__meta-lbl">Color</div><div class="hero__meta-val">Bay</div></div>
+          <div class="hero__meta-item"><div class="hero__meta-lbl">Arrival</div><div class="hero__meta-val">01.08.2024</div></div>
+        </div>
+      </div>
+      <div class="hero__actions">
+        <button class="btn btn--secondary btn--sm">Edit profile</button>
+        <button class="btn btn--secondary btn--sm">Add document</button>
+        <button class="btn btn--ghost btn--sm">Archive horse</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab tab--active">Profile</div>
+      <div class="tab">Documents <span class="tab__count">7</span></div>
+      <div class="tab">Health log <span class="tab__count">14</span></div>
+      <div class="tab">Schedule</div>
+      <div class="tab">Photos <span class="tab__count">5</span></div>
+    </div>
+
+    <div class="search-bar">
+      <svg class="ico" style="color: var(--ink-500);"><use href="#i-search"/></svg>
+      <input placeholder='Search Diva&apos;s docs and history… e.g. "vaccination 2026" or "farrier last visit"'/>
+      <span class="search-bar__hint">Reducto-indexed</span>
+    </div>
+
+    <div class="grid">
+
+      <!-- Documents (col-7) -->
+      <section class="card col-7">
+        <div class="card__head"><h3 class="card__title">Documents (7)</h3><a href="#" class="card__link">Upload + →</a></div>
+        <div class="docs">
+          <div class="doc">
+            <div class="doc__icon"><svg class="ico"><use href="#i-doc"/></svg></div>
+            <div><div class="doc__name">FEI passport — Diva</div><div class="doc__meta">passport · 3.4 MB · 01 Aug 2024</div></div>
+            <span class="doc__expiry doc__expiry--ok">expires 2031</span>
+          </div>
+          <div class="doc">
+            <div class="doc__icon"><svg class="ico"><use href="#i-doc"/></svg></div>
+            <div><div class="doc__name">Insurance — Mobiliar</div><div class="doc__meta">insurance · 480 KB · 04 Jan 2026</div></div>
+            <span class="doc__expiry doc__expiry--warn">expires in 18 days</span>
+          </div>
+          <div class="doc">
+            <div class="doc__icon"><svg class="ico"><use href="#i-doc"/></svg></div>
+            <div><div class="doc__name">Vet report — Influenza vaccination</div><div class="doc__meta">vet · 720 KB · 05 May 2026</div></div>
+            <span class="doc__expiry doc__expiry--ok">—</span>
+          </div>
+          <div class="doc">
+            <div class="doc__icon"><svg class="ico"><use href="#i-doc"/></svg></div>
+            <div><div class="doc__name">Farrier — full shoeing</div><div class="doc__meta">farrier · 180 KB · 22 Apr 2026</div></div>
+            <span class="doc__expiry doc__expiry--ok">—</span>
+          </div>
+          <div class="doc">
+            <div class="doc__icon"><svg class="ico"><use href="#i-doc"/></svg></div>
+            <div><div class="doc__name">X-ray — left front fetlock</div><div class="doc__meta">xray · 2.8 MB · 14 Feb 2025</div></div>
+            <span class="doc__expiry doc__expiry--ok">—</span>
+          </div>
+          <div class="doc">
+            <div class="doc__icon"><svg class="ico"><use href="#i-doc"/></svg></div>
+            <div><div class="doc__name">Purchase contract</div><div class="doc__meta">contract · 1.2 MB · 01 Aug 2024</div></div>
+            <span class="doc__expiry doc__expiry--ok">—</span>
+          </div>
+          <div class="doc">
+            <div class="doc__icon"><svg class="ico"><use href="#i-doc"/></svg></div>
+            <div><div class="doc__name">Vet authorisation form</div><div class="doc__meta">authorisation · 240 KB · 03 Mar 2025</div></div>
+            <span class="doc__expiry doc__expiry--ok">expires 31.12.2027</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Health log (col-5) -->
+      <section class="card col-5">
+        <div class="card__head"><h3 class="card__title">Health log</h3><a href="#" class="card__link">All entries →</a></div>
+        <div class="health">
+          <div class="health__row">
+            <div class="health__date">05 May 2026</div>
+            <div class="health__dot health__dot--moss"></div>
+            <div><div class="health__title">Influenza vaccination</div><div class="health__sub">Dr. Brunner · annual</div></div>
+            <span class="health__amount">PDF ↑</span>
+          </div>
+          <div class="health__row">
+            <div class="health__date">22 Apr 2026</div>
+            <div class="health__dot health__dot--terr"></div>
+            <div><div class="health__title">Farrier — full shoeing</div><div class="health__sub">Felix Lerch · 4 new shoes</div></div>
+            <span class="health__amount">PDF ↑</span>
+          </div>
+          <div class="health__row">
+            <div class="health__date">15 Mar 2026</div>
+            <div class="health__dot"></div>
+            <div><div class="health__title">Dental check</div><div class="health__sub">Equine dentist Wallis · clean</div></div>
+            <span class="health__amount">—</span>
+          </div>
+          <div class="health__row">
+            <div class="health__date">14 Feb 2025</div>
+            <div class="health__dot health__dot--terr"></div>
+            <div><div class="health__title">X-ray — left fetlock</div><div class="health__sub">Mild swelling resolved · rest 2 wk</div></div>
+            <span class="health__amount">PDF ↑</span>
+          </div>
+          <div class="health__row">
+            <div class="health__date">22 Nov 2024</div>
+            <div class="health__dot health__dot--moss"></div>
+            <div><div class="health__title">Tetanus booster</div><div class="health__sub">Dr. Brunner · 5-year</div></div>
+            <span class="health__amount">PDF ↑</span>
+          </div>
+        </div>
+        <div style="margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--ink-100); font-size: var(--fs-xs); color: var(--ink-500); display: flex; gap: var(--space-3);">
+          <span><span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--moss-600); vertical-align: 1px; margin-right: 4px;"></span>Vaccination</span>
+          <span><span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--terracotta-600); vertical-align: 1px; margin-right: 4px;"></span>Procedure / X-ray</span>
+          <span><span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--ink-300); vertical-align: 1px; margin-right: 4px;"></span>Routine check</span>
+        </div>
+      </section>
+
+      <!-- Schedule for this horse (col-12) -->
+      <section class="card col-12">
+        <div class="card__head"><h3 class="card__title">Schedule this week</h3><a href="#" class="card__link">Open calendar →</a></div>
+        <div class="schedule-strip">
+          <div class="day">
+            <div class="day__lbl">Mon</div><div class="day__num">4</div>
+          </div>
+          <div class="day day--today">
+            <div class="day__lbl">Tue · Today</div><div class="day__num">5</div>
+            <div class="day__event">09:00 Vet visit</div>
+          </div>
+          <div class="day">
+            <div class="day__lbl">Wed</div><div class="day__num">6</div>
+            <div class="day__event day__event--ink">Turnout</div>
+          </div>
+          <div class="day">
+            <div class="day__lbl">Thu</div><div class="day__num">7</div>
+            <div class="day__event">17:00 Lesson</div>
+          </div>
+          <div class="day">
+            <div class="day__lbl">Fri</div><div class="day__num">8</div>
+          </div>
+          <div class="day">
+            <div class="day__lbl">Sat</div><div class="day__num">9</div>
+          </div>
+          <div class="day">
+            <div class="day__lbl">Sun</div><div class="day__num">10</div>
+            <div class="day__event day__event--ink">Turnout</div>
+          </div>
+        </div>
+        <div style="font-size: var(--fs-xs); color: var(--ink-500);">
+          <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--terracotta-600); vertical-align: 1px; margin-right: 4px;"></span>Diva-specific event
+          <span style="margin-left: var(--space-4);"><span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--ink-500); vertical-align: 1px; margin-right: 4px;"></span>Stable-wide</span>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+</body>
+</html>

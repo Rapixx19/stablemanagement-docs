@@ -1,36 +1,23 @@
 <!doctype html>
-<html lang="de-CH">
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Reitstall — Übersicht</title>
+<title>Stable — Overview</title>
 <meta name="viewport" content="width=1280, initial-scale=1">
 <link rel="stylesheet" href="_tokens.css">
 <style>
-  /* Owner desktop: 12-col, 24px gutter, 1280px max content, 320px nav rail. Density: high. */
+  /* Owner desktop: 12-col, 24px gutter, 1280px max, 320px nav rail. Density: high, but visual-first. */
+  body { margin: 0; background: var(--paper); font-family: var(--font-sans); color: var(--ink-900); }
   .app { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; }
-  .nav {
-    background: var(--canvas);
-    border-right: 1px solid var(--ink-100);
-    padding: var(--space-6);
-    display: flex; flex-direction: column; gap: var(--space-4);
-  }
+
+  .nav { background: var(--canvas); border-right: 1px solid var(--ink-100); padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); }
   .nav__brand { display: flex; align-items: center; gap: var(--space-3); padding-bottom: var(--space-4); border-bottom: 1px solid var(--ink-100); }
-  .nav__plaque {
-    width: 32px; height: 32px; border-radius: var(--radius-md);
-    background: var(--clay-200); color: var(--terracotta-700);
-    display: grid; place-items: center; font-family: var(--font-serif); font-weight: 600;
-  }
+  .nav__plaque { width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--clay-200); color: var(--terracotta-700); display: grid; place-items: center; font-family: var(--font-serif); font-weight: 600; }
   .nav__name { font-family: var(--font-serif); font-size: var(--fs-lg); line-height: var(--lh-lg); font-weight: 500; }
   .nav__role { font-size: var(--fs-xs); line-height: var(--lh-xs); color: var(--ink-500); }
   .nav__group { display: flex; flex-direction: column; gap: 2px; margin-top: var(--space-2); }
-  .nav__heading { font-size: var(--fs-xs); line-height: var(--lh-xs); color: var(--ink-500); padding: var(--space-2) var(--space-3); letter-spacing: 0.04em; text-transform: uppercase; }
-  .nav__item {
-    display: flex; align-items: center; gap: var(--space-3);
-    height: 36px; padding: 0 var(--space-3);
-    border-radius: var(--radius-sm);
-    color: var(--ink-700); text-decoration: none; font-size: var(--fs-md);
-    transition: background-color var(--m-tap);
-  }
+  .nav__heading { font-size: var(--fs-xs); color: var(--ink-500); padding: var(--space-2) var(--space-3); letter-spacing: 0.04em; text-transform: uppercase; }
+  .nav__item { display: flex; align-items: center; gap: var(--space-3); height: 36px; padding: 0 var(--space-3); border-radius: var(--radius-sm); color: var(--ink-700); text-decoration: none; font-size: var(--fs-md); }
   .nav__item:hover { background: var(--paper); }
   .nav__item--active { background: var(--ink-100); color: var(--ink-900); font-weight: 500; }
   .nav__icon { width: 18px; height: 18px; color: var(--ink-500); }
@@ -40,76 +27,88 @@
 
   .main { padding: var(--space-8) var(--space-12); max-width: 1280px; }
   .topbar { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-8); }
-  .topbar__title { font-size: var(--fs-xl); line-height: var(--lh-xl); font-weight: 500; letter-spacing: -0.01em; }
-  .topbar__sub { color: var(--ink-500); font-size: var(--fs-sm); line-height: var(--lh-sm); margin-top: 2px; }
+  .topbar__title { font-size: var(--fs-xl); font-weight: 500; letter-spacing: -0.01em; }
+  .topbar__sub { color: var(--ink-500); font-size: var(--fs-sm); margin-top: 2px; }
   .topbar__actions { display: flex; gap: var(--space-3); }
   .kbd { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--ink-500); padding: 2px var(--space-2); border: 1px solid var(--ink-300); border-radius: var(--radius-sm); }
 
-  /* KPI row — these are STATS, not cards. No box around them. (DESIGN.md: cards earn their existence.) */
+  /* KPI row with sparklines */
   .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-12); margin-bottom: var(--space-8); padding-bottom: var(--space-6); border-bottom: 1px solid var(--ink-100); }
-  .kpi__label { font-size: var(--fs-xs); line-height: var(--lh-xs); color: var(--ink-500); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: var(--space-2); }
+  .kpi__label { font-size: var(--fs-xs); color: var(--ink-500); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: var(--space-2); }
   .kpi__value { font-size: var(--fs-xl); line-height: var(--lh-xl); font-weight: 500; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
-  .kpi__delta { font-size: var(--fs-sm); line-height: var(--lh-sm); margin-top: var(--space-1); }
+  .kpi__delta { font-size: var(--fs-sm); margin-top: var(--space-1); }
   .kpi__delta--up   { color: var(--moss-600); }
   .kpi__delta--down { color: var(--rust-600); }
   .kpi__delta--flat { color: var(--ink-500); }
+  .spark { display: block; margin-top: var(--space-3); height: 32px; width: 100%; overflow: visible; }
+  .spark__line { fill: none; stroke: var(--terracotta-600); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+  .spark__area { fill: var(--clay-200); opacity: 0.5; }
+  .spark__dot { fill: var(--terracotta-600); }
+  .spark--moss .spark__line { stroke: var(--moss-600); }
+  .spark--moss .spark__area { fill: var(--moss-200); }
+  .spark--moss .spark__dot { fill: var(--moss-600); }
+  .spark--ochre .spark__line { stroke: var(--ochre-600); }
+  .spark--ochre .spark__area { fill: var(--ochre-200); }
+  .spark--ochre .spark__dot { fill: var(--ochre-600); }
 
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap: var(--space-6);
-  }
-  .col-7 { grid-column: span 7; }
+  /* Today timeline */
+  .timeline { background: var(--canvas); border: 1px solid var(--ink-100); border-radius: var(--radius-md); padding: var(--space-5); margin-bottom: var(--space-6); }
+  .timeline__head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-4); }
+  .timeline__title { font-size: var(--fs-md); font-weight: 500; }
+  .timeline__link { font-size: var(--fs-sm); color: var(--terracotta-600); text-decoration: none; }
+  .tl { position: relative; height: 88px; background: var(--paper); border-radius: var(--radius-sm); border: 1px solid var(--ink-100); }
+  .tl__hours { position: absolute; top: 0; left: 0; right: 0; display: grid; grid-template-columns: repeat(12, 1fr); }
+  .tl__hour { font-size: var(--fs-xs); color: var(--ink-500); padding: var(--space-2) 0 0 var(--space-2); font-family: var(--font-mono); border-left: 1px dashed var(--ink-100); height: 100%; }
+  .tl__hour:first-child { border-left: 0; }
+  .tl__now { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--terracotta-600); }
+  .tl__now::before { content: ''; position: absolute; top: -4px; left: -3px; width: 8px; height: 8px; background: var(--terracotta-600); border-radius: 50%; }
+  .tl__event { position: absolute; top: 28px; height: 32px; border-radius: var(--radius-sm); padding: var(--space-2) var(--space-2); font-size: var(--fs-xs); color: var(--canvas); display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+  .tl__event--terr { background: var(--terracotta-600); }
+  .tl__event--ink  { background: var(--ink-500); }
+  .tl__event--moss { background: transparent; border: 1px dashed var(--moss-600); color: var(--moss-600); }
+  .tl__event-title { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tl__event-meta { font-size: 10px; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Grid: stall map + horses strip */
+  .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--space-6); margin-bottom: var(--space-6); }
   .col-5 { grid-column: span 5; }
+  .col-7 { grid-column: span 7; }
   .col-12 { grid-column: span 12; }
 
   .card__header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-4); }
-  .card__title { font-size: var(--fs-md); line-height: var(--lh-md); font-weight: 500; }
-  .card__link  { font-size: var(--fs-sm); line-height: var(--lh-sm); color: var(--terracotta-600); text-decoration: none; }
+  .card__title { font-size: var(--fs-md); font-weight: 500; }
+  .card__link { font-size: var(--fs-sm); color: var(--terracotta-600); text-decoration: none; }
 
-  /* Today's events list */
-  .event { display: grid; grid-template-columns: 64px 8px 1fr auto; gap: var(--space-3); align-items: center; padding: var(--space-3) 0; border-top: 1px solid var(--ink-100); }
-  .event:first-child { border-top: 0; }
-  .event__time { font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--ink-700); font-variant-numeric: tabular-nums; }
-  .event__bar  { width: 4px; height: 28px; border-radius: 2px; }
-  .event__bar--terracotta { background: var(--terracotta-600); }
-  .event__bar--ink        { background: var(--ink-500); }
-  .event__bar--moss       { background: var(--moss-600); border: 1px dashed var(--moss-600); background: transparent; }
-  .event__title { font-size: var(--fs-md); }
-  .event__sub   { font-size: var(--fs-sm); color: var(--ink-500); }
-  .event__meta  { font-size: var(--fs-sm); color: var(--ink-500); }
-
-  /* Recent invoices table — owner density, tabular nums right-aligned */
-  table.tbl { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
-  table.tbl th, table.tbl td { padding: var(--space-3) 0; border-top: 1px solid var(--ink-100); text-align: left; }
-  table.tbl th { font-weight: 500; color: var(--ink-500); border-top: 0; font-size: var(--fs-xs); letter-spacing: 0.04em; text-transform: uppercase; }
-  table.tbl td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
-  table.tbl th.num { text-align: right; }
-  table.tbl tr:first-child td { border-top: 1px solid var(--ink-100); }
-
-  /* Stall map preview tile */
+  /* Stall map tile (kept as in original — already visual) */
   .stalls { display: grid; grid-template-columns: repeat(8, 1fr); gap: var(--space-2); }
   .stall { aspect-ratio: 1; border-radius: var(--radius-sm); border: 1px solid var(--ink-100); display: grid; place-items: center; font-size: var(--fs-xs); color: var(--ink-500); background: var(--canvas); font-family: var(--font-mono); }
-  .stall--occ { background: var(--clay-200); color: var(--terracotta-700); border-color: transparent; }
-  .stall--free{ background: var(--moss-200); color: var(--moss-600); border-color: transparent; }
-  .stall--hold{ background: var(--ochre-200); color: var(--ochre-600); border-color: transparent; }
-
+  .stall--occ  { background: var(--clay-200);  color: var(--terracotta-700); border-color: transparent; }
+  .stall--free { background: var(--moss-200);  color: var(--moss-600);       border-color: transparent; }
+  .stall--hold { background: var(--ochre-200); color: var(--ochre-600);      border-color: transparent; }
   .legend { display: flex; gap: var(--space-4); margin-top: var(--space-3); font-size: var(--fs-xs); color: var(--ink-500); }
   .legend__sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: var(--space-2); vertical-align: 1px; }
 
-  /* Requests list */
-  .req { display: flex; gap: var(--space-3); padding: var(--space-3) 0; border-top: 1px solid var(--ink-100); align-items: flex-start; }
-  .req:first-child { border-top: 0; }
-  .req__avatar { flex: 0 0 auto; }
-  .req__body { flex: 1; min-width: 0; }
-  .req__title { font-size: var(--fs-md); }
-  .req__sub   { font-size: var(--fs-sm); color: var(--ink-500); margin-top: 2px; }
-  .req__actions { display: flex; gap: var(--space-2); margin-top: var(--space-2); }
+  /* Horses strip */
+  .horses { display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--space-3); }
+  .horse { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-2); border-radius: var(--radius-sm); border: 1px solid var(--ink-100); background: var(--canvas); cursor: default; }
+  .horse__photo { width: 100%; aspect-ratio: 1; border-radius: var(--radius-sm); background: var(--clay-200); display: grid; place-items: center; font-family: var(--font-serif); font-weight: 500; color: var(--terracotta-700); font-size: var(--fs-md); position: relative; overflow: hidden; }
+  .horse__photo--dim { background: var(--ink-100); color: var(--ink-500); }
+  .horse__dot { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--moss-600); border: 1.5px solid var(--canvas); }
+  .horse__name { font-size: var(--fs-sm); font-weight: 500; }
+  .horse__sub { font-size: var(--fs-xs); color: var(--ink-500); font-family: var(--font-mono); }
 
-  .quick { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); }
+  /* Bottom row: alerts + quick actions */
+  .alerts { display: flex; flex-direction: column; gap: var(--space-2); }
+  .alert { display: flex; gap: var(--space-3); padding: var(--space-3); border-radius: var(--radius-sm); align-items: flex-start; }
+  .alert--ochre { background: var(--ochre-200); color: var(--ochre-600); }
+  .alert--moss { background: var(--moss-200); color: var(--moss-600); }
+  .alert--ink { background: var(--ink-100); color: var(--ink-700); }
+  .alert__title { font-size: var(--fs-sm); font-weight: 500; }
+  .alert__sub { font-size: var(--fs-xs); margin-top: 2px; opacity: 0.85; }
+
+  .quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); }
   .quick .btn { height: 44px; }
 
-  /* Lucide-equivalent inline icons (1.5px stroke, never filled) */
   .ico { width: 18px; height: 18px; stroke-width: 1.5; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 </style>
 </head>
@@ -120,41 +119,41 @@
     <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></symbol>
     <symbol id="i-horse" viewBox="0 0 24 24"><path d="M5 21V11c0-2 1-4 4-4h6l3-3v6l3 3-3 1v3l-2 4M9 21v-5"/></symbol>
     <symbol id="i-money" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></symbol>
-    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/><circle cx="17" cy="9" r="2.5"/><path d="M15 20c0-2 2-3.5 4-3.5s2 .5 2 .5"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/></symbol>
     <symbol id="i-task" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></symbol>
     <symbol id="i-msg" viewBox="0 0 24 24"><path d="M3 5h18v12H8l-5 4z"/></symbol>
     <symbol id="i-bex" viewBox="0 0 24 24"><path d="M4 6h12l4 4v8H4z"/><path d="M4 10h16"/></symbol>
     <symbol id="i-set" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.5-2.4.7a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.3a7 7 0 0 0-2 1.2L5 5.8l-2 3.5 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.5 2.4-.7a7 7 0 0 0 2 1.2L10 21h4l.5-2.3a7 7 0 0 0 2-1.2l2.4.7 2-3.5-2-1.5c.1-.4.1-.8.1-1.2z"/></symbol>
     <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
-    <symbol id="i-send" viewBox="0 0 24 24"><path d="M3 11l18-7-7 18-2-8z"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5M4 19h16M10 19a2 2 0 0 0 4 0"/></symbol>
   </defs>
 </svg>
 
 <div class="app">
-  <aside class="nav" aria-label="Hauptnavigation">
+  <aside class="nav" aria-label="Main navigation">
     <div class="nav__brand">
       <div class="nav__plaque">LF</div>
       <div>
         <div class="nav__name">La Fattoria</div>
-        <div class="nav__role">Stallleitung · Anna Frei</div>
+        <div class="nav__role">Stable manager · Anna Frei</div>
       </div>
     </div>
 
     <div class="nav__group">
-      <a href="#" class="nav__item nav__item--active"><svg class="ico nav__icon"><use href="#i-home"/></svg>Übersicht</a>
-      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-cal"/></svg>Kalender</a>
-      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-horse"/></svg>Pferde &amp; Boxen</a>
-      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-users"/></svg>Kunden</a>
-      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-task"/></svg>Aufgaben</a>
-      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-msg"/></svg>Nachrichten</a>
+      <a href="#" class="nav__item nav__item--active"><svg class="ico nav__icon"><use href="#i-home"/></svg>Overview</a>
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-cal"/></svg>Schedule</a>
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-horse"/></svg>Horses &amp; Stalls</a>
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-users"/></svg>Clients</a>
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-task"/></svg>Tasks</a>
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-msg"/></svg>Messages</a>
     </div>
 
-    <div class="nav__heading">Buchhaltung</div>
+    <div class="nav__heading">Accounting</div>
     <div class="nav__group">
-      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-money"/></svg>Rechnungen</a>
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-money"/></svg>Invoices</a>
       <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-bex"/></svg>Bexio</a>
-      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-set"/></svg>Einstellungen</a>
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-set"/></svg>Settings</a>
     </div>
 
     <div class="nav__user">
@@ -169,221 +168,181 @@
   <main class="main">
     <div class="topbar">
       <div>
-        <h1 class="topbar__title">Übersicht</h1>
-        <div class="topbar__sub">Dienstag, 5. Mai 2026 · 7 Termine heute</div>
+        <h1 class="topbar__title">Overview</h1>
+        <div class="topbar__sub">Tuesday, 5 May 2026 · 7 events today</div>
       </div>
       <div class="topbar__actions">
-        <button class="btn btn--secondary btn--sm" aria-label="Schnellsuche"><svg class="ico"><use href="#i-search"/></svg> Suchen <span class="kbd">⌘K</span></button>
-        <button class="btn btn--primary btn--sm"><svg class="ico"><use href="#i-plus"/></svg> Neuer Termin</button>
+        <button class="btn btn--secondary btn--sm" aria-label="Quick search"><svg class="ico"><use href="#i-search"/></svg> Search <span class="kbd">⌘K</span></button>
+        <button class="btn btn--primary btn--sm"><svg class="ico"><use href="#i-plus"/></svg> New event</button>
       </div>
     </div>
 
-    <section class="kpis" aria-label="Kennzahlen">
+    <!-- KPI row with sparklines -->
+    <section class="kpis" aria-label="Key numbers">
       <div>
-        <div class="kpi__label">Umsatz Mai (prog.)</div>
+        <div class="kpi__label">Revenue (May, projected)</div>
         <div class="kpi__value">14'820.50</div>
-        <div class="kpi__delta kpi__delta--up">+ 4.2 % vs. April</div>
+        <div class="kpi__delta kpi__delta--up">+ 4.2 % vs April</div>
+        <svg class="spark" viewBox="0 0 200 32" preserveAspectRatio="none" aria-hidden="true">
+          <path class="spark__area" d="M0,24 L20,22 L40,20 L60,21 L80,17 L100,18 L120,15 L140,12 L160,14 L180,10 L200,8 L200,32 L0,32 Z"/>
+          <path class="spark__line" d="M0,24 L20,22 L40,20 L60,21 L80,17 L100,18 L120,15 L140,12 L160,14 L180,10 L200,8"/>
+          <circle class="spark__dot" cx="200" cy="8" r="2.5"/>
+        </svg>
       </div>
       <div>
-        <div class="kpi__label">Offene Rechnungen</div>
+        <div class="kpi__label">Outstanding</div>
         <div class="kpi__value">2'380.00</div>
-        <div class="kpi__delta kpi__delta--down">3 überfällig</div>
+        <div class="kpi__delta kpi__delta--down">3 overdue</div>
+        <svg class="spark spark--ochre" viewBox="0 0 200 32" preserveAspectRatio="none" aria-hidden="true">
+          <path class="spark__area" d="M0,18 L20,16 L40,20 L60,22 L80,20 L100,24 L120,22 L140,26 L160,28 L180,26 L200,24 L200,32 L0,32 Z"/>
+          <path class="spark__line" d="M0,18 L20,16 L40,20 L60,22 L80,20 L100,24 L120,22 L140,26 L160,28 L180,26 L200,24"/>
+          <circle class="spark__dot" cx="200" cy="24" r="2.5"/>
+        </svg>
       </div>
       <div>
-        <div class="kpi__label">Boxenbelegung</div>
+        <div class="kpi__label">Stall occupancy</div>
         <div class="kpi__value">23 / 24</div>
-        <div class="kpi__delta kpi__delta--flat">1 frei ab 15.05.</div>
+        <div class="kpi__delta kpi__delta--flat">1 free from 15 May</div>
+        <svg class="spark spark--moss" viewBox="0 0 200 32" preserveAspectRatio="none" aria-hidden="true">
+          <path class="spark__area" d="M0,6 L20,6 L40,8 L60,6 L80,4 L100,6 L120,4 L140,6 L160,8 L180,6 L200,4 L200,32 L0,32 Z"/>
+          <path class="spark__line" d="M0,6 L20,6 L40,8 L60,6 L80,4 L100,6 L120,4 L140,6 L160,8 L180,6 L200,4"/>
+          <circle class="spark__dot" cx="200" cy="4" r="2.5"/>
+        </svg>
       </div>
       <div>
-        <div class="kpi__label">Aktive Kunden</div>
+        <div class="kpi__label">Active clients</div>
         <div class="kpi__value">19</div>
-        <div class="kpi__delta kpi__delta--up">+ 1 diese Woche</div>
+        <div class="kpi__delta kpi__delta--up">+ 1 this week</div>
+        <svg class="spark spark--moss" viewBox="0 0 200 32" preserveAspectRatio="none" aria-hidden="true">
+          <path class="spark__area" d="M0,24 L20,24 L40,22 L60,22 L80,20 L100,20 L120,18 L140,18 L160,16 L180,14 L200,12 L200,32 L0,32 Z"/>
+          <path class="spark__line" d="M0,24 L20,24 L40,22 L60,22 L80,20 L100,20 L120,18 L140,18 L160,16 L180,14 L200,12"/>
+          <circle class="spark__dot" cx="200" cy="12" r="2.5"/>
+        </svg>
       </div>
     </section>
 
-    <div class="grid">
-      <section class="card col-7" aria-label="Heute">
-        <div class="card__header">
-          <h2 class="card__title">Heute</h2>
-          <a class="card__link" href="#">Kalender öffnen →</a>
+    <!-- Today as horizontal timeline -->
+    <section class="timeline" aria-label="Today">
+      <div class="timeline__head">
+        <h2 class="timeline__title">Today · 07:00 – 19:00</h2>
+        <a class="timeline__link" href="#">Open schedule →</a>
+      </div>
+      <div class="tl">
+        <div class="tl__hours">
+          <div class="tl__hour">07</div>
+          <div class="tl__hour">08</div>
+          <div class="tl__hour">09</div>
+          <div class="tl__hour">10</div>
+          <div class="tl__hour">11</div>
+          <div class="tl__hour">12</div>
+          <div class="tl__hour">13</div>
+          <div class="tl__hour">14</div>
+          <div class="tl__hour">15</div>
+          <div class="tl__hour">16</div>
+          <div class="tl__hour">17</div>
+          <div class="tl__hour">18</div>
         </div>
-        <div class="event">
-          <div class="event__time">07:30</div>
-          <div class="event__bar event__bar--ink"></div>
-          <div>
-            <div class="event__title">Fütterung Reihe A</div>
-            <div class="event__sub">3 Mitarbeiter · Gang 1 – 8</div>
-          </div>
-          <div class="event__meta">In 12 Min.</div>
+        <!-- now indicator at 07:18 ≈ 1.5% in -->
+        <div class="tl__now" style="left: 1.5%;"></div>
+        <!-- 07:30 Feeding row A · ink-500 · 30min -->
+        <div class="tl__event tl__event--ink" style="left: 4%; width: 4%;">
+          <div class="tl__event-title">Feed A</div>
+          <div class="tl__event-meta">07:30</div>
         </div>
-        <div class="event">
-          <div class="event__time">09:00</div>
-          <div class="event__bar event__bar--terracotta"></div>
-          <div>
-            <div class="event__title">Tierarzt — Diva (Box 7)</div>
-            <div class="event__sub">Dr. Brunner · Impfung Influenza</div>
-          </div>
-          <div class="event__meta">Frau Keller</div>
+        <!-- 09:00 Vet · terracotta · 1h -->
+        <div class="tl__event tl__event--terr" style="left: 16.6%; width: 8.3%;">
+          <div class="tl__event-title">Vet — Diva</div>
+          <div class="tl__event-meta">09:00 · Dr. Brunner · Box 7</div>
         </div>
-        <div class="event">
-          <div class="event__time">14:00</div>
-          <div class="event__bar event__bar--terracotta"></div>
-          <div>
-            <div class="event__title">Reitstunde — Lukas / Akira</div>
-            <div class="event__sub">Halle B · 60 Min.</div>
-          </div>
-          <div class="event__meta">Trainerin Rita</div>
+        <!-- 14:00 Lesson · terracotta · 1h -->
+        <div class="tl__event tl__event--terr" style="left: 58%; width: 8.3%;">
+          <div class="tl__event-title">Lesson Lukas / Akira</div>
+          <div class="tl__event-meta">14:00 · Rita</div>
         </div>
-        <div class="event">
-          <div class="event__time">16:30</div>
-          <div class="event__bar event__bar--moss" style="border-style: dashed;"></div>
-          <div>
-            <div class="event__title">Buchbarer Slot — Hufschmied</div>
-            <div class="event__sub">Frei · 2 von 4 Plätzen offen</div>
-          </div>
-          <div class="event__meta">öffentlich</div>
+        <!-- 16:30 Open slot · moss dashed · 1h -->
+        <div class="tl__event tl__event--moss" style="left: 79%; width: 8.3%;">
+          <div class="tl__event-title">Farrier · 2 of 4 free</div>
+          <div class="tl__event-meta">16:30 · open slot</div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <section class="card col-5" aria-label="Boxenplan">
+    <!-- Stall map + horses strip -->
+    <div class="grid">
+      <section class="card col-5" aria-label="Stall plan">
         <div class="card__header">
-          <h2 class="card__title">Boxenplan</h2>
-          <a class="card__link" href="#">Karte öffnen →</a>
+          <h2 class="card__title">Stalls</h2>
+          <a class="card__link" href="#">Open map →</a>
         </div>
-        <div class="stalls" role="img" aria-label="24 Boxen, 23 belegt, 1 reserviert">
-          <div class="stall stall--occ">A1</div>
-          <div class="stall stall--occ">A2</div>
-          <div class="stall stall--occ">A3</div>
-          <div class="stall stall--occ">A4</div>
-          <div class="stall stall--occ">A5</div>
-          <div class="stall stall--occ">A6</div>
-          <div class="stall stall--occ">A7</div>
-          <div class="stall stall--occ">A8</div>
-          <div class="stall stall--occ">B1</div>
-          <div class="stall stall--occ">B2</div>
-          <div class="stall stall--occ">B3</div>
-          <div class="stall stall--occ">B4</div>
-          <div class="stall stall--occ">B5</div>
-          <div class="stall stall--occ">B6</div>
-          <div class="stall stall--occ">B7</div>
-          <div class="stall stall--hold">B8</div>
-          <div class="stall stall--occ">C1</div>
-          <div class="stall stall--occ">C2</div>
-          <div class="stall stall--occ">C3</div>
-          <div class="stall stall--occ">C4</div>
-          <div class="stall stall--occ">C5</div>
-          <div class="stall stall--occ">C6</div>
-          <div class="stall stall--occ">C7</div>
-          <div class="stall stall--occ">C8</div>
+        <div class="stalls" role="img" aria-label="24 stalls, 23 occupied, 1 reserved">
+          <div class="stall stall--occ">A1</div><div class="stall stall--occ">A2</div><div class="stall stall--occ">A3</div><div class="stall stall--occ">A4</div>
+          <div class="stall stall--occ">A5</div><div class="stall stall--occ">A6</div><div class="stall stall--occ">A7</div><div class="stall stall--occ">A8</div>
+          <div class="stall stall--occ">B1</div><div class="stall stall--occ">B2</div><div class="stall stall--occ">B3</div><div class="stall stall--occ">B4</div>
+          <div class="stall stall--occ">B5</div><div class="stall stall--occ">B6</div><div class="stall stall--occ">B7</div><div class="stall stall--hold">B8</div>
+          <div class="stall stall--occ">C1</div><div class="stall stall--occ">C2</div><div class="stall stall--occ">C3</div><div class="stall stall--occ">C4</div>
+          <div class="stall stall--occ">C5</div><div class="stall stall--occ">C6</div><div class="stall stall--occ">C7</div><div class="stall stall--occ">C8</div>
         </div>
         <div class="legend">
-          <span><span class="legend__sw" style="background: var(--clay-200);"></span>Belegt 23</span>
-          <span><span class="legend__sw" style="background: var(--ochre-200);"></span>Reserviert 1</span>
-          <span><span class="legend__sw" style="background: var(--moss-200);"></span>Frei 0</span>
+          <span><span class="legend__sw" style="background: var(--clay-200);"></span>Occupied 23</span>
+          <span><span class="legend__sw" style="background: var(--ochre-200);"></span>Reserved 1</span>
+          <span><span class="legend__sw" style="background: var(--moss-200);"></span>Free 0</span>
         </div>
       </section>
 
-      <section class="card col-7" aria-label="Letzte Rechnungen">
+      <section class="card col-7" aria-label="Horses recently in the barn">
         <div class="card__header">
-          <h2 class="card__title">Letzte Rechnungen</h2>
-          <a class="card__link" href="#">Alle Rechnungen →</a>
+          <h2 class="card__title">Active horses</h2>
+          <a class="card__link" href="#">All 28 horses →</a>
         </div>
-        <table class="tbl">
-          <thead>
-            <tr>
-              <th>Nr.</th><th>Kunde</th><th>Periode</th>
-              <th class="num">Betrag CHF</th><th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="num">2026-0142</td>
-              <td>Familie Keller</td>
-              <td>April 2026</td>
-              <td class="num">1'420.50</td>
-              <td><span class="pill pill--paid">● bezahlt</span></td>
-            </tr>
-            <tr>
-              <td class="num">2026-0141</td>
-              <td>Lukas Zimmermann</td>
-              <td>April 2026</td>
-              <td class="num">980.00</td>
-              <td><span class="pill pill--overdue">! überfällig 5 Tage</span></td>
-            </tr>
-            <tr>
-              <td class="num">2026-0140</td>
-              <td>Reitverein Solothurn</td>
-              <td>April 2026</td>
-              <td class="num">2'140.00</td>
-              <td><span class="pill pill--sent">○ versendet</span></td>
-            </tr>
-            <tr>
-              <td class="num">2026-0139</td>
-              <td>Marta Brunner</td>
-              <td>April 2026</td>
-              <td class="num">1'160.00</td>
-              <td><span class="pill pill--paid">● bezahlt</span></td>
-            </tr>
-            <tr>
-              <td class="num">2026-0138</td>
-              <td>Stefan Roth</td>
-              <td>April 2026</td>
-              <td class="num">1'420.50</td>
-              <td><span class="pill pill--draft">○ Entwurf</span></td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="horses">
+          <div class="horse"><div class="horse__photo">D<span class="horse__dot" title="Activity today"></span></div><div class="horse__name">Diva</div><div class="horse__sub">B7</div></div>
+          <div class="horse"><div class="horse__photo">F<span class="horse__dot"></span></div><div class="horse__name">Festival</div><div class="horse__sub">C3</div></div>
+          <div class="horse"><div class="horse__photo">A<span class="horse__dot"></span></div><div class="horse__name">Akira</div><div class="horse__sub">A5</div></div>
+          <div class="horse"><div class="horse__photo horse__photo--dim">P</div><div class="horse__name">Pinot</div><div class="horse__sub">B3</div></div>
+          <div class="horse"><div class="horse__photo horse__photo--dim">R</div><div class="horse__name">Rocco</div><div class="horse__sub">C5</div></div>
+          <div class="horse"><div class="horse__photo horse__photo--dim">S</div><div class="horse__name">Sienna</div><div class="horse__sub">A2</div></div>
+        </div>
+        <div style="margin-top: var(--space-3); font-size: var(--fs-xs); color: var(--ink-500);">
+          <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--moss-600); vertical-align: 1px; margin-right: 4px;"></span>
+          Activity today (event, task or message). Dimmed = no activity in 48 h.
+        </div>
       </section>
 
-      <section class="card col-5" aria-label="Anfragen">
-        <div class="card__header">
-          <h2 class="card__title">Kundenanfragen</h2>
-          <a class="card__link" href="#">Alle anzeigen (4)</a>
-        </div>
-        <div class="req">
-          <div class="avatar req__avatar">MK</div>
-          <div class="req__body">
-            <div class="req__title">Marta Keller — Transport</div>
-            <div class="req__sub">Donnerstag 14.05., Avenches CSI · für Diva</div>
-            <div class="req__actions">
-              <button class="btn btn--secondary btn--sm">Vorschlag senden</button>
-              <button class="btn btn--ghost btn--sm">Ablehnen</button>
+      <section class="card col-12" aria-label="Alerts">
+        <div class="alerts">
+          <div class="alert alert--ochre">
+            <svg class="ico"><use href="#i-bell"/></svg>
+            <div>
+              <div class="alert__title">3 invoices need attention — Bexio sync failed</div>
+              <div class="alert__sub">VAT mismatch on bedding line. Fix once in catalog, retry all 3.</div>
             </div>
           </div>
-        </div>
-        <div class="req">
-          <div class="avatar req__avatar">LZ</div>
-          <div class="req__body">
-            <div class="req__title">Lukas Z. — Hufschmied</div>
-            <div class="req__sub">Diese Woche · für Akira</div>
-            <div class="req__actions">
-              <button class="btn btn--primary btn--sm">In Slot 16:30 buchen</button>
-              <button class="btn btn--ghost btn--sm">Schreiben</button>
+          <div class="alert alert--ink">
+            <svg class="ico"><use href="#i-bell"/></svg>
+            <div>
+              <div class="alert__title">4 client requests waiting</div>
+              <div class="alert__sub">Oldest: Marta Keller, transport — 24 h pending. Auto-expires in 38 min.</div>
             </div>
           </div>
-        </div>
-        <div class="req">
-          <div class="avatar req__avatar">SR</div>
-          <div class="req__body">
-            <div class="req__title">Stefan Roth — Reitstunde</div>
-            <div class="req__sub">Samstag Vormittag · Wunsch: Rita</div>
-            <div class="req__actions">
-              <button class="btn btn--primary btn--sm">Bestätigen 10:00</button>
-              <button class="btn btn--ghost btn--sm">Verschieben</button>
+          <div class="alert alert--moss">
+            <svg class="ico"><use href="#i-bell"/></svg>
+            <div>
+              <div class="alert__title">May draft invoices ready (19)</div>
+              <div class="alert__sub">All clients with billable lines this month. Review and send.</div>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="card col-12" aria-label="Schnellaktionen">
+      <section class="card col-12" aria-label="Quick actions">
         <div class="card__header">
-          <h2 class="card__title">Schnellaktionen</h2>
+          <h2 class="card__title">Quick actions</h2>
         </div>
-        <div class="quick" style="grid-template-columns: repeat(4, 1fr);">
-          <button class="btn btn--secondary"><svg class="ico"><use href="#i-plus"/></svg> Pferd hinzufügen</button>
-          <button class="btn btn--secondary"><svg class="ico"><use href="#i-send"/></svg> Rechnungen versenden (1)</button>
-          <button class="btn btn--secondary"><svg class="ico"><use href="#i-cal"/></svg> Wochentafel drucken</button>
-          <button class="btn btn--secondary"><svg class="ico"><use href="#i-bex"/></svg> Mit Bexio synchronisieren</button>
+        <div class="quick">
+          <button class="btn btn--secondary"><svg class="ico"><use href="#i-plus"/></svg> Add horse</button>
+          <button class="btn btn--secondary"><svg class="ico"><use href="#i-money"/></svg> Review May drafts</button>
+          <button class="btn btn--secondary"><svg class="ico"><use href="#i-cal"/></svg> Print weekly board</button>
+          <button class="btn btn--secondary"><svg class="ico"><use href="#i-bex"/></svg> Sync with Bexio</button>
         </div>
       </section>
     </div>

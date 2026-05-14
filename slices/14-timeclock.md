@@ -63,6 +63,18 @@ create index on time_punches (stable_id, worker_user_id, punched_at);
 - Owner cannot delete punches; can only "annotate" with a note. Original punch immutable.
 - See `domains/labour-law.md` for the full compliance map
 
+## RLS
+
+Both tables scoped by `stable_id` per `domains/rls.md`.
+
+- `stable_geofence`: `owner` full access; `worker`/`client` SELECT only (client-side fence check needs centre + radius).
+- `time_punches`:
+  - `worker`: **INSERT** with `WITH CHECK (worker_user_id = auth.uid())` — own punches only. SELECT for own only. **UPDATE denied, DELETE denied.** Forgot-to-clock-out is handled by the 23:59 auto-punch, not by worker edits.
+  - `owner`: SELECT all in stable. UPDATE limited to `approved_by_user_id`, `approved_at`, `notes` (off-site approval flow). **DELETE denied for all roles** — labour-records-of-record per ArGV 1 Art. 73. Corrections are annotations, never deletions.
+  - `client`: **no access**.
+
+**Column-level constraint** — `BEFORE UPDATE` trigger on `time_punches` raises when any column outside `{approved_by_user_id, approved_at, notes}` is changed, regardless of role. Server-action zod schema mirrors the whitelist.
+
 ## Geofence math
 
 ```ts
@@ -89,6 +101,10 @@ GPS accuracy 10–50m typical; default radius 100m. Owner can set radius per sta
 - [ ] CSV export for last month: every clocked-in shift represented; total hours match sum
 - [ ] Geofence permission denied: punch recorded with `geo_within_fence = null`; owner gets approval queue
 - [ ] No raw coordinate ever appears in DB or logs (audit-tested)
+- [ ] **Worker INSERT impersonation**: INSERT with `worker_user_id != auth.uid()` rejected by WITH CHECK
+- [ ] **Owner UPDATE on `punched_at` rejected** by trigger (immutability — labour-records compliance)
+- [ ] **Worker SELECT on another worker's punch** rejected by RLS
+- [ ] **DELETE on `time_punches` rejected for owner role** by RLS (immutability)
 
 ## Acceptance integration test
 

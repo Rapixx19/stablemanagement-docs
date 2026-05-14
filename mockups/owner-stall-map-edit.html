@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="de-CH">
+<head>
+<meta charset="utf-8">
+<title>Stallplan bearbeiten · La Fattoria</title>
+<meta name="viewport" content="width=1280, initial-scale=1">
+<link rel="stylesheet" href="_tokens.css">
+<style>
+  /* Owner desktop, 320px nav rail. Two-pane: stall grid (large left) + side detail panel (320px right).
+     Side panel slides in from right at tablet (768–1023). On mobile (V1 owner-mobile per DES-LOCK-2): grid only,
+     tap a stall to open drawer-from-bottom. */
+  .app { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; }
+
+  .nav { background: var(--canvas); border-right: 1px solid var(--ink-100); padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); }
+  .nav__brand { display: flex; align-items: center; gap: var(--space-3); padding-bottom: var(--space-4); border-bottom: 1px solid var(--ink-100); }
+  .nav__plaque { width: 32px; height: 32px; border-radius: var(--radius-md); background: var(--clay-200); color: var(--terracotta-700); display: grid; place-items: center; font-family: var(--font-serif); font-weight: 600; }
+  .nav__name { font-family: var(--font-serif); font-size: var(--fs-lg); line-height: var(--lh-lg); font-weight: 500; }
+  .nav__role { font-size: var(--fs-xs); line-height: var(--lh-xs); color: var(--ink-500); }
+  .nav__group { display: flex; flex-direction: column; gap: 2px; margin-top: var(--space-2); }
+  .nav__heading { font-size: var(--fs-xs); line-height: var(--lh-xs); color: var(--ink-500); padding: var(--space-2) var(--space-3); letter-spacing: 0.04em; text-transform: uppercase; }
+  .nav__item { display: flex; align-items: center; gap: var(--space-3); height: 36px; padding: 0 var(--space-3); border-radius: var(--radius-sm); color: var(--ink-700); text-decoration: none; font-size: var(--fs-md); transition: background-color var(--m-tap); }
+  .nav__item:hover { background: var(--paper); }
+  .nav__item--active { background: var(--ink-100); color: var(--ink-900); font-weight: 500; }
+  .nav__icon { width: 18px; height: 18px; color: var(--ink-500); }
+  .nav__item--active .nav__icon { color: var(--terracotta-600); }
+  .nav__user { margin-top: auto; display: flex; align-items: center; gap: var(--space-3); padding-top: var(--space-4); border-top: 1px solid var(--ink-100); }
+  .avatar { width: 32px; height: 32px; border-radius: 999px; background: var(--ink-100); display: grid; place-items: center; color: var(--ink-700); font-size: var(--fs-sm); font-weight: 500; }
+
+  .main { padding: var(--space-8) var(--space-12); max-width: 1280px; }
+  .topbar { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-8); }
+  .topbar__title { font-size: var(--fs-xl); line-height: var(--lh-xl); font-weight: 500; letter-spacing: -0.01em; }
+  .topbar__sub { color: var(--ink-500); font-size: var(--fs-sm); margin-top: 2px; }
+  .topbar__actions { display: flex; gap: var(--space-3); }
+
+  /* Editor pane: grid + detail */
+  .editor { display: grid; grid-template-columns: 1fr 360px; gap: var(--space-6); align-items: start; }
+
+  /* Stall grid: rows of stalls, 8 per row, with row labels */
+  .row-block { margin-bottom: var(--space-6); }
+  .row-label { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-3); }
+  .row-label h3 { font-family: var(--font-serif); font-size: var(--fs-lg); font-weight: 500; }
+  .row-meta { color: var(--ink-500); font-size: var(--fs-sm); }
+  .row-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: var(--space-2); }
+  .stall { aspect-ratio: 1; border-radius: var(--radius-sm); border: 1px solid var(--ink-100); display: grid; place-items: center; padding: var(--space-2); background: var(--canvas); cursor: pointer; transition: outline-color var(--m-tap), background-color var(--m-tap); position: relative; }
+  .stall:hover { background: var(--paper); }
+  .stall:focus-visible { outline: 2px solid var(--terracotta-600); outline-offset: 2px; }
+  .stall--occ { background: var(--clay-200); border-color: transparent; color: var(--terracotta-700); }
+  .stall--free { background: var(--moss-200); border-color: transparent; color: var(--moss-600); }
+  .stall--hold { background: var(--ochre-200); border-color: transparent; color: var(--ochre-600); }
+  .stall--maint { background: var(--ink-100); border-color: transparent; color: var(--ink-500); }
+  .stall--paddock { background: var(--canvas); border: 1px dashed var(--ink-300); color: var(--ink-700); }
+  .stall--selected { outline: 2px solid var(--terracotta-600); outline-offset: 2px; }
+  .stall__code { font-family: var(--font-mono); font-size: var(--fs-sm); font-weight: 500; }
+  .stall__horse { font-size: var(--fs-xs); color: inherit; opacity: 0.8; line-height: 14px; text-align: center; }
+  .stall__add { background: transparent; border: 1px dashed var(--ink-300); color: var(--ink-500); }
+  .stall__add:hover { border-color: var(--terracotta-600); color: var(--terracotta-600); background: var(--paper); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: var(--space-4) var(--space-6); margin: var(--space-4) 0 var(--space-8); padding: var(--space-3) 0; border-top: 1px solid var(--ink-100); border-bottom: 1px solid var(--ink-100); font-size: var(--fs-sm); color: var(--ink-700); }
+  .legend__sw { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: var(--space-2); vertical-align: -1px; }
+
+  /* Detail side panel */
+  .panel { background: var(--canvas); border: 1px solid var(--ink-100); border-radius: var(--radius-md); padding: var(--space-6); position: sticky; top: var(--space-6); }
+  .panel__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); }
+  .panel__code { font-family: var(--font-mono); font-size: var(--fs-xl); font-weight: 500; letter-spacing: -0.01em; }
+  .panel__close { color: var(--ink-500); cursor: pointer; }
+  .panel__close:hover { color: var(--ink-900); }
+  .panel__row { display: grid; grid-template-columns: 1fr; gap: var(--space-1); padding: var(--space-3) 0; border-top: 1px solid var(--ink-100); }
+  .panel__row:first-child { border-top: 0; padding-top: 0; }
+  .panel__label { font-size: var(--fs-xs); color: var(--ink-500); letter-spacing: 0.04em; text-transform: uppercase; }
+  .panel__value { font-size: var(--fs-md); color: var(--ink-900); }
+  .panel__value--mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+  .field-group { display: flex; flex-direction: column; gap: var(--space-2); }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field-label { font-size: var(--fs-xs); color: var(--ink-500); letter-spacing: 0.04em; text-transform: uppercase; }
+  .field input, .field select { font: inherit; padding: var(--space-2) var(--space-3); border: 1px solid var(--ink-100); border-radius: var(--radius-sm); background: var(--canvas); color: var(--ink-900); transition: border-color var(--m-tap); }
+  .field input:focus, .field select:focus { outline: 2px solid var(--terracotta-600); outline-offset: 2px; }
+  .seg { display: inline-flex; border: 1px solid var(--ink-100); border-radius: var(--radius-sm); overflow: hidden; }
+  .seg__btn { padding: var(--space-2) var(--space-4); background: var(--canvas); color: var(--ink-700); font-size: var(--fs-sm); cursor: pointer; border-right: 1px solid var(--ink-100); transition: background-color var(--m-tap); }
+  .seg__btn:last-child { border-right: 0; }
+  .seg__btn:hover { background: var(--paper); }
+  .seg__btn--active { background: var(--ink-100); color: var(--ink-900); font-weight: 500; }
+
+  .panel__actions { display: flex; gap: var(--space-2); margin-top: var(--space-6); padding-top: var(--space-4); border-top: 1px solid var(--ink-100); }
+
+  .ico { width: 18px; height: 18px; stroke-width: 1.5; stroke: currentColor; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h4v-6h6v6h4V10"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-horse" viewBox="0 0 24 24"><path d="M5 21V11c0-2 1-4 4-4h6l3-3v6l3 3-3 1v3l-2 4M9 21v-5"/></symbol>
+    <symbol id="i-money" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3 3-5 6-5s6 2 6 5"/></symbol>
+    <symbol id="i-task" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></symbol>
+    <symbol id="i-msg" viewBox="0 0 24 24"><path d="M3 5h18v12H8l-5 4z"/></symbol>
+    <symbol id="i-bex" viewBox="0 0 24 24"><path d="M4 6h12l4 4v8H4z"/><path d="M4 10h16"/></symbol>
+    <symbol id="i-set" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.5-2.4.7a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.3a7 7 0 0 0-2 1.2L5 5.8l-2 3.5 2 1.5A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.5 2.4-.7a7 7 0 0 0 2 1.2L10 21h4l.5-2.3a7 7 0 0 0 2-1.2l2.4.7 2-3.5-2-1.5c.1-.4.1-.8.1-1.2z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M6 18L18 6"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <aside class="nav" aria-label="Hauptnavigation">
+    <div class="nav__brand">
+      <div class="nav__plaque">LF</div>
+      <div>
+        <div class="nav__name">La Fattoria</div>
+        <div class="nav__role">Stallleitung · Anna Frei</div>
+      </div>
+    </div>
+    <div class="nav__group">
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-home"/></svg>Übersicht</a>
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-cal"/></svg>Kalender</a>
+      <a href="#" class="nav__item nav__item--active"><svg class="ico nav__icon"><use href="#i-horse"/></svg>Pferde &amp; Boxen</a>
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-users"/></svg>Kunden</a>
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-task"/></svg>Aufgaben</a>
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-msg"/></svg>Nachrichten</a>
+    </div>
+    <div class="nav__heading">Buchhaltung</div>
+    <div class="nav__group">
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-money"/></svg>Rechnungen</a>
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-bex"/></svg>Bexio</a>
+      <a href="#" class="nav__item"><svg class="ico nav__icon"><use href="#i-set"/></svg>Einstellungen</a>
+    </div>
+    <div class="nav__user">
+      <div class="avatar">AF</div>
+      <div>
+        <div style="font-size: var(--fs-sm); font-weight: 500;">Anna Frei</div>
+        <div class="t-meta">anna@lafattoria.ch</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1 class="topbar__title">Stallplan bearbeiten</h1>
+        <div class="topbar__sub">28 Boxen · 23 belegt · 1 reserviert · 4 frei</div>
+      </div>
+      <div class="topbar__actions">
+        <button class="btn btn--ghost btn--sm">Vorschau</button>
+        <button class="btn btn--secondary btn--sm">Reihe hinzufügen</button>
+        <button class="btn btn--primary btn--sm"><svg class="ico"><use href="#i-plus"/></svg> Neue Box</button>
+      </div>
+    </div>
+
+    <div class="editor">
+
+      <div>
+        <div class="row-block">
+          <div class="row-label">
+            <h3>Reihe A · Innenstall</h3>
+            <span class="row-meta">8 Boxen · alle belegt</span>
+          </div>
+          <div class="row-grid">
+            <button class="stall stall--occ" aria-label="Box A1, belegt von Bella"><span class="stall__code">A1</span><span class="stall__horse">Bella</span></button>
+            <button class="stall stall--occ"><span class="stall__code">A2</span><span class="stall__horse">Akira</span></button>
+            <button class="stall stall--occ"><span class="stall__code">A3</span><span class="stall__horse">Caspar</span></button>
+            <button class="stall stall--occ"><span class="stall__code">A4</span><span class="stall__horse">Diva</span></button>
+            <button class="stall stall--occ"><span class="stall__code">A5</span><span class="stall__horse">Esprit</span></button>
+            <button class="stall stall--occ"><span class="stall__code">A6</span><span class="stall__horse">Floh</span></button>
+            <button class="stall stall--occ stall--selected" aria-label="Box A7, belegt von Diva, ausgewählt" aria-pressed="true"><span class="stall__code">A7</span><span class="stall__horse">Diva</span></button>
+            <button class="stall stall--occ"><span class="stall__code">A8</span><span class="stall__horse">Gisèle</span></button>
+          </div>
+        </div>
+
+        <div class="row-block">
+          <div class="row-label">
+            <h3>Reihe B · Innenstall</h3>
+            <span class="row-meta">8 Boxen · 7 belegt, 1 reserviert</span>
+          </div>
+          <div class="row-grid">
+            <button class="stall stall--occ"><span class="stall__code">B1</span><span class="stall__horse">Hannes</span></button>
+            <button class="stall stall--occ"><span class="stall__code">B2</span><span class="stall__horse">Iris</span></button>
+            <button class="stall stall--occ"><span class="stall__code">B3</span><span class="stall__horse">Jara</span></button>
+            <button class="stall stall--occ"><span class="stall__code">B4</span><span class="stall__horse">Kira</span></button>
+            <button class="stall stall--occ"><span class="stall__code">B5</span><span class="stall__horse">Luna</span></button>
+            <button class="stall stall--occ"><span class="stall__code">B6</span><span class="stall__horse">Milo</span></button>
+            <button class="stall stall--occ"><span class="stall__code">B7</span><span class="stall__horse">Nero</span></button>
+            <button class="stall stall--hold" aria-label="Box B8, reserviert ab 15.05."><span class="stall__code">B8</span><span class="stall__horse">res. 15.05.</span></button>
+          </div>
+        </div>
+
+        <div class="row-block">
+          <div class="row-label">
+            <h3>Reihe C · Aussenboxen</h3>
+            <span class="row-meta">8 Boxen · 7 belegt, 1 in Wartung</span>
+          </div>
+          <div class="row-grid">
+            <button class="stall stall--occ"><span class="stall__code">C1</span><span class="stall__horse">Ole</span></button>
+            <button class="stall stall--occ"><span class="stall__code">C2</span><span class="stall__horse">Pippa</span></button>
+            <button class="stall stall--occ"><span class="stall__code">C3</span><span class="stall__horse">Quasi</span></button>
+            <button class="stall stall--occ"><span class="stall__code">C4</span><span class="stall__horse">Rio</span></button>
+            <button class="stall stall--occ"><span class="stall__code">C5</span><span class="stall__horse">Sira</span></button>
+            <button class="stall stall--occ"><span class="stall__code">C6</span><span class="stall__horse">Tilda</span></button>
+            <button class="stall stall--occ"><span class="stall__code">C7</span><span class="stall__horse">Uno</span></button>
+            <button class="stall stall--maint" aria-label="Box C8, in Wartung"><span class="stall__code">C8</span><span class="stall__horse">Wartung</span></button>
+          </div>
+        </div>
+
+        <div class="row-block">
+          <div class="row-label">
+            <h3>Paddocks</h3>
+            <span class="row-meta">4 Aussenflächen · gemeinsam belegbar</span>
+          </div>
+          <div class="row-grid" style="grid-template-columns: repeat(4, 1fr);">
+            <button class="stall stall--paddock"><span class="stall__code">P1</span><span class="stall__horse">Reihe A</span></button>
+            <button class="stall stall--paddock"><span class="stall__code">P2</span><span class="stall__horse">Reihe B</span></button>
+            <button class="stall stall--paddock"><span class="stall__code">P3</span><span class="stall__horse">gross</span></button>
+            <button class="stall stall--paddock stall__add"><span class="stall__code"><svg class="ico"><use href="#i-plus"/></svg></span><span class="stall__horse">Paddock</span></button>
+          </div>
+        </div>
+
+        <div class="legend" role="img" aria-label="Legende: belegt 23, reserviert 1, frei 0, Wartung 1, Paddock 4">
+          <span><span class="legend__sw" style="background: var(--clay-200);"></span>Belegt 23</span>
+          <span><span class="legend__sw" style="background: var(--ochre-200);"></span>Reserviert 1</span>
+          <span><span class="legend__sw" style="background: var(--moss-200);"></span>Frei 0</span>
+          <span><span class="legend__sw" style="background: var(--ink-100);"></span>Wartung 1</span>
+          <span><span class="legend__sw" style="border: 1px dashed var(--ink-300);"></span>Paddock 4</span>
+        </div>
+
+      </div>
+
+      <aside class="panel" aria-label="Boxen-Details A7">
+        <div class="panel__header">
+          <div class="panel__code">A7</div>
+          <span class="panel__close" title="Schliessen"><svg class="ico"><use href="#i-x"/></svg></span>
+        </div>
+
+        <div class="panel__row">
+          <div class="panel__label">Aktuell belegt von</div>
+          <div class="panel__value">Diva</div>
+          <div class="t-meta">Familie Keller · Vollpension · seit 12.04.2025</div>
+        </div>
+
+        <div class="panel__row">
+          <div class="panel__label">Letzter Wechsel</div>
+          <div class="panel__value">vor 1 Jahr · von B3</div>
+        </div>
+
+        <hr class="hr">
+
+        <div class="field-group">
+          <div class="field">
+            <label class="field-label" for="code">Box-Code</label>
+            <input id="code" value="A7" />
+          </div>
+          <div class="field">
+            <label class="field-label">Typ</label>
+            <div class="seg" role="radiogroup">
+              <span class="seg__btn seg__btn--active">Box</span>
+              <span class="seg__btn">Paddock</span>
+              <span class="seg__btn">Wartung</span>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label" for="cap">Kapazität</label>
+            <input id="cap" value="1" />
+          </div>
+          <div class="field">
+            <label class="field-label" for="row">Reihe</label>
+            <select id="row"><option>Reihe A · Innenstall</option><option>Reihe B</option><option>Reihe C</option></select>
+          </div>
+        </div>
+
+        <div class="panel__actions">
+          <button class="btn btn--secondary btn--sm" style="flex: 1;">Übernehmen</button>
+          <button class="btn btn--ghost btn--sm" style="color: var(--rust-600);" aria-label="Box entfernen"><svg class="ico"><use href="#i-trash"/></svg></button>
+        </div>
+      </aside>
+
+    </div>
+  </main>
+</div>
+</body>
+</html>

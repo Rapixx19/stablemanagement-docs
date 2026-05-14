@@ -12,7 +12,7 @@ La Fattoria opens the app, sees real data, and runs an end-to-end month: clients
 
 ### Dashboards (the visible polish)
 
-1. **Owner dashboard** at `/dashboard` (owner density per `DESIGN.md`: 12-col grid, 1280px max, 320px nav rail, 24px gutter). KPI row (revenue forecast, outstanding, occupancy, active clients — `xl 28/36` numerals, tabular figures, NOT individually carded — they're stats, not cards) + stall map tile + recent invoices + today's events + client requests + quick actions. Visual reference: `mockups/owner-dashboard.html`.
+1. **Owner dashboard** at `/dashboard` (owner density per `DESIGN.md`: 12-col grid, 1280px max, 320px nav rail, 24px gutter). KPI row (revenue forecast, outstanding, occupancy, active clients — `xl 28/36` numerals, tabular figures, NOT individually carded — they're stats, not cards) + **Meine Aufgaben heute** tile (slice 04 item 5; owner-self-assigned tasks for today, max 6, clickthrough to `/owner/tasks/mine`) + stall map tile + recent invoices + today's events + client requests + quick actions (incl. "Zur Ops-Kalender" link → `/owner/ops`, slice 15 item 9). Visual reference: `mockups/owner-dashboard.html`.
 2. **Client dashboard** at `/dashboard` (client density per `DESIGN.md`: 12-col, 960px max read width, single-pane). Horses hero + calendar + this month's tab + invoices + messages + quick actions. Tone: warm per `DESIGN.md` voice rules. Visual reference: `mockups/client-home.html`.
 3. **Worker dashboard** (Home tab) per `DESIGN.md` worker density. Already mostly wired through slices 12–15; this slice does the polish and the owner-ping panel. Visual reference: `mockups/worker-today.html`.
 
@@ -29,8 +29,10 @@ La Fattoria opens the app, sees real data, and runs an end-to-end month: clients
    - Add first 3 clients
    - Add first 3 horses
    - Build catalog (paste from existing PDF)
+   - **Bulk historical document import** — owner drops a ZIP (≤100 MB, ≤200 PDFs) of legacy paper-scanned documents (passports, insurance, vet history, contracts). Server runs Reducto + Haiku triage on each; owner reviews the batch in `/owner/inbox/documents` after the wizard finishes. Optional step (skip available). Pipeline spec: `domains/document-ingestion.md`.
    - Configure VAT (effektiv, rates pre-seeded)
-   - Connect Bexio (optional)
+   - **Choose accounting workflow** — radio with two options: "Bexio (empfohlen)" or "Kein/Anderes — manuelles Markieren als bezahlt + CSV-Export". Per `slices/09-bexio.md` Scope and choice. La Fattoria's default decided at kickoff with Ferdinand. Picking Bexio leads into the OAuth step; picking Kein skips it.
+   - Connect Bexio (only if previous step = Bexio)
    - Invite Sharad as worker (test the role)
 
 ### Operational hardening
