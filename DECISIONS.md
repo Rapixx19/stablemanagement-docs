@@ -89,6 +89,7 @@ Realistic V1 timeline revised to **20–22 weeks** for 2 engineers + freelancer 
 
 ## Change log
 
+- 2026-05-14 — Reverted hybrid TS+Python proposal (briefly considered as D18). V1 stays TS-only per original D6. Bulletproof billing math invariants (Decimal discipline, frozen VAT rate, audit-per-step, golden fixture regression, idempotent monthly cron) still apply — implemented in TS via `decimal.js` + property-based testing. Python port deferred to V1.5+ if/when a real precision or scale need surfaces. Rationale: avoid the rewrite trap; single language simplifies onboarding for new full-stack hire and keeps timeline at 20–22 weeks.
 - 2026-05-14 — D17: slice 01 split into 01a (people + horses + photos, 5d) and 01b (documents + ingestion + Reducto + search + aliases, 9d). README phase table updated. Realistic V1 timeline 20–22 weeks. Triggered by `/plan-ceo-review` HOLD SCOPE session.
 - 2026-05-14 — Pre-slice-00 API-key provisioning sprint locked to Ferdinand (TODOS.md). 5 keys: Reducto + DPA, OpenAI embeddings, Anthropic, Resend inbound, Bexio dev sandbox.
 - 2026-05-14 — D16: client-bookable services catalog locked. Slice 05 schema gains `bookable_by_client` + booking rules. Slice 11 gains `/client/services` (catalog) + `/client/services/[id]` (per-service booking page). New mockup `client-services.html`.
