@@ -55,18 +55,35 @@ Bexio access token expires in 1h. Refresh token in 30 days.
 
 ## Vercel env vars (single app)
 
+**Canonical template:** `docs/.env.example` — copy to `.env.local` for local dev, paste into Vercel project settings for staging/production. Updated 2026-05-14 to reflect D14-D17.
+
 Vercel (`apps/web`) needs:
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY` (server-side only — Vercel scopes `NEXT_PUBLIC_*` to the browser bundle and the rest to the server runtime)
-- `SUPABASE_DB_DIRECT_URL` (direct connection, used by migrations only)
-- `SUPABASE_DB_POOLER_URL` (transaction-mode pooler, used by app traffic)
-- `RESEND_API_KEY`
-- `ANTHROPIC_API_KEY`
-- `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`
-- `BEXIO_CLIENT_ID`, `BEXIO_CLIENT_SECRET`
-- `BEXIO_TOKEN_ENCRYPTION_KEY` (pgcrypto symmetric key)
-- `CRON_SECRET` — shared header secret used by Vercel Cron to authenticate calls to `/api/cron/*` (Bexio reconciliation, email digest)
+
+**Tier 1 — critical (slice 00 blockers):**
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (server-only — Vercel scopes `NEXT_PUBLIC_*` to the browser bundle, the rest to server runtime)
+- `SUPABASE_DB_DIRECT_URL` (migrations + pg_cron only)
+- `SUPABASE_DB_POOLER_URL` (transaction-mode pooler for app traffic)
+- `SUPABASE_PROJECT_REF` (Supabase CLI + MCP)
+- `CRON_SECRET` (you generate, 32-byte base64; auth for `/api/cron/*` per D12)
+- `RESEND_API_KEY` (transactional)
+- `RESEND_INBOUND_WEBHOOK_SECRET` (slice 01b inbound document webhook signature)
+- `RESEND_SENDER_DOMAIN` (`lafattoria.app`)
+- `REDUCTO_API_KEY`, `REDUCTO_API_BASE` (slice 01b document extraction per D14)
+- `OPENAI_EMBEDDING_API_KEY`, `OPENAI_EMBEDDING_MODEL` (slice 01b cross-language search per D14)
+- `ANTHROPIC_API_KEY` (slice 05 catalog + slice 01b triage per D14/D15)
+- `BEXIO_CLIENT_ID`, `BEXIO_CLIENT_SECRET`, `BEXIO_API_BASE`
+- `BEXIO_TOKEN_ENCRYPTION_KEY` (you generate, 32-byte base64; pgcrypto symmetric key per D8)
+
+**Tier 2 — important (observability, slice ~08+):**
+- `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_DSN`, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT`
+- `BETTER_STACK_TOKEN` (or `AXIOM_TOKEN` + `AXIOM_DATASET`)
+
+**Tier 3 — pre-launch only:**
+- `SIX_VALIDATOR_USERNAME`, `SIX_VALIDATOR_PASSWORD` (slice 08 QR-bill validation in CI)
+
+**App config:**
+- `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_INBOX_DOMAIN`, `NEXT_PUBLIC_DEFAULT_LOCALE`, `NODE_ENV`
 
 ## Cron authentication
 
@@ -79,7 +96,8 @@ Secrets injected only when needed for prod tasks. Test runs use mock secrets.
 
 Required for CI:
 - `SUPABASE_TEST_DB_URL` (ephemeral test DB)
-- `SIX_VALIDATOR_TOKEN` (for QR-bill PDF validation in CI)
+- `SIX_VALIDATOR_USERNAME` + `SIX_VALIDATOR_PASSWORD` (QR-bill PDF validation in CI, slice 08)
+- All `*_API_KEY` env vars for any slice's integration tests that hit real (or mocked) external services. Use rate-limited test keys, not production keys.
 
 ## Rotation procedure
 
