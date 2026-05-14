@@ -47,6 +47,22 @@ Locked 2026-05-14 in `/plan-ceo-review` HOLD SCOPE session. Slice 00 PR blocks i
 - [ ] **Resend** — sender domain verified, inbound MX records on `inbox.stableplatform.ch` pointing at Resend inbound, webhook secret. Store as `RESEND_API_KEY` + `RESEND_INBOUND_WEBHOOK_SECRET`. Refs slice 00 D6 + slice 10 + `domains/document-ingestion.md`.
 - [ ] **Bexio** — developer account + sandbox + OAuth app registration. Production credentials gated until La Fattoria onboards. Refs slice 09.
 
+## Design review follow-ups (2026-05-14)
+
+From `/plan-design-review` session 2026-05-14. Plan scored 8.5/10; held the May 7 baseline.
+
+- [ ] **DES-LOCK-3 applied** (this session): `/owner/ops` desktop-only with sm-viewport redirect — slice 15 + DESIGN.md updated 2026-05-14.
+- [ ] **Owner-ops summary row** — one-line summary at the top of the ops calendar grid: "This week: N workers, M coverage gaps, K late punches." Reduces wall-of-grid landing impact.
+- [ ] **Journey storyboard `owner-document-arrives.md`** — 40-line walkthrough of vet emails PDF → owner confirms → searchable. The killer feature has no narrative.
+- [ ] **Journey storyboard `client-books-service.md`** — 40-line walkthrough of client opens `/client/services` → picks service → picks day → submits → owner confirms → calendar updates. The "Anmelden" CTA is the most novel client interaction since May 7.
+- [ ] **3 new primitives** to add to DESIGN.md OR `packages/ui/README.md` registry: `Sparkline` (SVG polyline variants for 4 KPI sparklines), `HorseGridItem` (photo grid square for dashboard active-horses strip), `AlertBand` (3 severities for dashboard alerts panel). Implied by the 2026-05-14 dashboard refresh but not yet specced.
+- [ ] **Owner-mobile spec for `/owner/search` and `/owner/inbox/documents`** — DES-LOCK-2 says owner renders all viewports. Both lack a sm-viewport behavior; needed before slice 01b ships.
+- [ ] **Sparkline empty/seed state** — when stable has < 14 days of history, hide sparkline (don't show a flat line at zero). Locks visual-integrity floor.
+- [ ] **Horse-photo strip empty state** — when no horse has `is_primary` photo, show first 6 horses with letter avatars + onboarding prompt "Lade Fotos hoch, damit die Übersicht wärmer wird."
+- [ ] **Document inbox quarantine modal threshold** — at N quarantined documents, switch from banner to blocking modal. Recommend N=20.
+- [ ] **Owner-mobile bottom tab "Mehr" submenu spec** — bookable services, search, inbox, accounting, ops-redirect all live under Mehr. Spec the secondary nav order + counts.
+- [ ] **State matrix copy** for `/owner/search`, `/owner/inbox/documents`, `/client/services` — loading / empty / error / partial in DE/FR/IT/EN. Lands in `domains/copy-library.md` per the existing CEO review TODO.
+
 ## CEO review follow-ups (2026-05-14)
 
 From `/plan-ceo-review` HOLD SCOPE session.

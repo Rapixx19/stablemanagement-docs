@@ -81,6 +81,11 @@ Owner viewport behavior:
 - **md (768–1023)**, tablet — nav rail collapses to a 56px icon rail; 12-col reflows to 8-col with 16px gutters; KPI row reflows 4-across → 2×2 stacked.
 - **sm (375–767)**, mobile — bottom tab bar replaces nav rail (4 items max: Übersicht · Stall · Tagebuch · Mehr); full-bleed cards; edit flows open as drawer-from-bottom; KPI row stacks to a single column.
 
+**DES-LOCK-3 (2026-05-14): Desktop-only surfaces.** Some owner surfaces are grid-heavy or planning-dense and don't fit at `sm`. These render at `md` (≥768px) and above only; at `sm` they show a polite redirect ("auf einem grösseren Bildschirm öffnen"). Current list:
+- `/owner/ops` (slice 15 ops calendar — 5 workers × 7 days grid)
+
+Future additions to this list go in `DECISIONS.md` and `slices/*` acceptance criteria. Default expectation remains DES-LOCK-2 (owner renders all viewports); desktop-only is the exception, not the rule.
+
 ## Motion
 
 Three motions, total. More than three = too much.
